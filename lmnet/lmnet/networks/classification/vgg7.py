@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # =============================================================================
+from functools import partial
 import tensorflow as tf
 
 from lmnet.networks.classification.base import Base
@@ -214,69 +215,51 @@ class Vgg7Network(Base):
         return tf.add_n(losses) * self.weight_decay_rate
 
 
-# class Vgg7Quantize(Vgg7Network, BaseQuantize):
-#     version = 1.0
+class Vgg7Quantize(Vgg7Network):
+    version = 1.0
 
-#     def __init__(
-#             self,
-#             quantize_first_convolution=True,
-#             activation_quantizer=None,
-#             activation_quantizer_kwargs=None,
-#             weight_quantizer=None,
-#             weight_quantizer_kwargs=None,
-#             *args,
-#             **kwargs
-#     ):
-#         Vgg7Network.__init__(
-#             self,
-#             *args,
-#             **kwargs
-#         )
+    def __init__(
+            self,
+            weight_quantizer=None,
+            weight_quantizer_kwargs=None,
+            *args,
+            **kwargs
+    ):
 
-#         BaseQuantize.__init__(
-#             self,
-#             activation_quantizer,
-#             activation_quantizer_kwargs,
-#             weight_quantizer,
-#             weight_quantizer_kwargs,
-#             quantize_first_convolution,
-#         )
+        self.weight_quantization = weight_quantizer(**weight_quantizer_kwargs)
+        super().__init__(
+            *args,
+            **kwargs
+        )
 
-#     @staticmethod
-#     def _quantized_variable_getter(getter, name, quantize_first_convolution, weight_quantization=None, *args, **kwargs):
-#         """Get the quantized variables.
+    @staticmethod
+    def _quantized_variable_getter(getter, name, weight_quantization=None, *args, **kwargs):
+        """Get the quantized variables.
 
-#         Use if to choose or skip the target should be quantized.
+        Use if to choose or skip the target should be quantized.
 
-#         Args:
-#             getter: Default from tensorflow.
-#             name: Default from tensorflow.
-#             weight_quantization: Callable object which quantize variable.
-#             args: Args.
-#             kwargs: Kwargs.
-#         """
+        Args:
+            getter: Default from tensorflow.
+            name: Default from tensorflow.
+            weight_quantization: Callable object which quantize variable.
+            args: Args.
+            kwargs: Kwargs.
+        """
 
-#         assert callable(weight_quantization)
-#         var = getter(name, *args, **kwargs)
-#         with tf.variable_scope(name):
-#             # Apply weight quantize to variable whose last word of name is "kernel".
-#             if not quantize_first_convolution:
-#                 if var.op.name.startswith("conv1/"):
-#                     return var
+        assert callable(weight_quantization)
+        var = getter(name, *args, **kwargs)
+        with tf.variable_scope(name):
+            if "kernel" == var.op.name.split("/")[-1]:
+                return weight_quantization(var)
 
-#             if "kernel" == var.op.name.split("/")[-1]:
-#                 return weight_quantization(var)
+            if "weights" == var.op.name.split("/")[-1]:
+                return weight_quantization(var)
+        return var
 
-#             if var.op.name.startswith("fc1/") or var.op.name.startswith("fc2/"):
-#                 if "weights" == var.op.name.split("/")[-1]:
-#                     return weight_quantization(var)
-#         return var
-
-#     def base(self, images, is_training):
-#         custom_getter = partial(
-#             self._quantized_variable_getter,
-#             weight_quantization=self.weight_quantization,
-#             quantize_first_convolution=self.quantize_first_convolution,
-#         )
-#         with tf.variable_scope("", custom_getter=custom_getter):
-#             return super().base(images, is_training)
+    def base(self, images, is_training):
+        custom_getter = partial(
+            self._quantized_variable_getter,
+            weight_quantization=self.weight_quantization,
+        )
+        with tf.variable_scope("", custom_getter=custom_getter):
+            return super().base(images, is_training)
