@@ -1,3 +1,6 @@
 # Getting Started
 ## Python
-See [README for python](./python/README.md)
+See [README for Python](./python/README.md)
+
+## JavaScript
+See [README for JavaScript](./js/README.md)
