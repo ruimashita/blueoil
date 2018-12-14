@@ -82,6 +82,11 @@ object_detection_dataset_formats = [
         'name': 'DeLTA-Mark for Object Detection',
         'desc': 'Dataset for object detection created by DeLTA-Mark',
     },
+    {
+        'name': 'WIDER_FACE',
+        'desc': 'Dataset for object detection created by DeLTA-Mark',
+    },
+
 ]
 
 # TODO(wakisaka): Remove the commnet-out when support semantic segmentation.

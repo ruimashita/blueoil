@@ -56,6 +56,10 @@ _DATASET_FORMAT_DATASET_MODULE_CLASS = {
         "dataset_module": "open_images_v4",
         "dataset_class": "OpenImagesV4BoundingBoxBase",
     },
+    "WIDER_FACE": {
+        "dataset_module": "widerface",
+        "dataset_class": "WiderFace",
+    },
     "DeLTA-Mark for Object Detection": {
         "dataset_module": "delta_mark",
         "dataset_class": "ObjectDetectionBase",
@@ -67,6 +71,7 @@ def generate(blueoil_config_filename):
 
     blueoil_config = _load_yaml(blueoil_config_filename)
     lmnet_config = _blueoil_to_lmnet(blueoil_config)
+
     config_file = _save(lmnet_config)
 
     return config_file
@@ -159,14 +164,15 @@ def _blueoil_to_lmnet(blueoil_config):
         "max_steps": "",
         "initial_learning_rate": initial_learning_rate,
         "learning_rate_setting": learning_rate_setting,
-        
+        "optimizer": "MomentumOptimizer",
+
         "image_size": image_size,
 
         "quantize_first_convolution": quantize_first_convolution,
 
         "dataset": dataset,
     }
-    
+
     # max_epochs or max_steps
     if "steps" in blueoil_config["trainer"].keys():
         config["max_steps"] = blueoil_config["trainer"]["steps"]
