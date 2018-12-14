@@ -249,11 +249,11 @@ class Vgg7Quantize(Vgg7Network):
         assert callable(weight_quantization)
         var = getter(name, *args, **kwargs)
         with tf.variable_scope(name):
-            if "kernel" == var.op.name.split("/")[-1]:
-                return weight_quantization(var)
+            if "kernel" == var.op.name.split("/")[-1] or "weights" == var.op.name.split("/")[-1]:
+                quantized_kernel = weight_quantization(var)
+                tf.summary.histogram("quantized_kernel", quantized_kernel)
+                return quantized_kernel
 
-            if "weights" == var.op.name.split("/")[-1]:
-                return weight_quantization(var)
         return var
 
     def base(self, images, is_training):
