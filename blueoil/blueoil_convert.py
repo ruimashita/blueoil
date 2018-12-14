@@ -99,6 +99,7 @@ def make_all(project_dir, output_dir):
         ["lib_x86", "lib_x86.so"],
         ["lib_arm", "lib_arm.so"],
         ["lib_fpga", "lib_fpga.so"],
+        ["lib_js", "lib_js.js"],
         ["ar_x86", "libdlk_x86.a"],
         ["ar_arm", "libdlk_arm.a"],
         ["ar_fpga", "libdlk_fpga.a"],
