@@ -115,6 +115,8 @@ void func_QTZ_linear_mid_tread_half_body(
   float32x4_t round_offset = vdupq_n_f32(0.5);
   float32x4_t max_value_rn = vdupq_n_f32(max_value_r * n);
 
+
+#pragma omp parallel
   for (; i <= static_cast<int>(end) - 4; i += 4)
   {
     float32x4_t tmp = vld1q_f32(&input[i]);
@@ -155,22 +157,7 @@ void func_QTZ_linear_mid_tread_half(
 
   unsigned num_elems = in_height * in_width * in_depth * in_channel;
 
-  unsigned int chunk_size = num_elems / std::thread::hardware_concurrency();
-  if (chunk_size == 0) {
-    chunk_size += 1;
-  }
-
-  std::vector<std::thread> threads;
-  for (unsigned int i = 0; i < num_elems; i += chunk_size) {
-    threads.emplace_back(std::thread([input, nbit, max_value, &output, in_height, in_width, in_depth, in_channel, i, chunk_size, num_elems] {
-          func_QTZ_linear_mid_tread_half_body(input, nbit, max_value, output, in_height, in_width, in_depth, in_channel, i,
-                                              std::min(i + chunk_size, static_cast<unsigned int>(num_elems)));
-    }));
-  }
-
-  for (auto& th: threads) {
-    th.join();
-  }
+  func_QTZ_linear_mid_tread_half_body(input, nbit, max_value, output, in_height, in_width, in_depth, in_channel, 0, num_elems);
 
   Measurement::Stop();
 }

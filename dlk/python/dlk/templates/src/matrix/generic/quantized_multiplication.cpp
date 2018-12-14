@@ -26,6 +26,7 @@ limitations under the License.
 namespace {
 
 static int pop_count(T_UINT i) {
+  return __builtin_popcount(i);
   i = i - ((i >> 1) & 0x55555555);
   i = (i & 0x33333333) + ((i >> 2) & 0x33333333);
   return (((i + (i >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
@@ -195,21 +196,7 @@ void quantized_matrix_multiplication(
 
   assert(A.cols() * 2 == B.rows());
 
-  unsigned int chunk_size = B.cols() / std::thread::hardware_concurrency();
-  if (chunk_size == 0) {
-    chunk_size += 1;
-  }
-
-  std::vector<std::thread> threads;
-  for (unsigned int i = 0; i < B.cols(); i += chunk_size) {
-    threads.emplace_back(std::thread([A, B, &C, i, chunk_size] {
-          quantized_matrix_multiplication_body(A, B, i, std::min(i + chunk_size, static_cast<unsigned int>(B.cols())), C);
-    }));
-  }
-
-  for (auto& th: threads) {
-    th.join();
-  }
+  quantized_matrix_multiplication_body(A, B, 0, B.cols(), C);
 
   Measurement::Stop();
 }

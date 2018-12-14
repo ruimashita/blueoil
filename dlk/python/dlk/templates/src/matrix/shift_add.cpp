@@ -57,48 +57,29 @@ void matrix_shift_add(MatrixView<float, MatrixOrder::ColMajor>& buf,
 
   Measurement::Start("matrix_shift_add_f2");
 
-  unsigned int chunk_size = (h * w) / static_cast<unsigned int>(std::thread::hardware_concurrency());
-  if (chunk_size == 0) {
-    chunk_size += 1;
-  }
+#pragma omp parallel
+  for (int k = 0; k < (h * w); ++k) {
+    for (unsigned int i = 0; i < (kh * kw); ++i) {
+      int offset = calc_offset(i, w);
+      if ((k - offset < 0) || (k - offset >= (h * w))) {
+        continue;
+      }
+      float* r = result.data(0, k);
+      float* b = buf.data(i*oc, k - offset);
 
-  std::vector<std::thread> threads;
-  for (unsigned int begin = 0; begin < (h * w); begin += chunk_size) {
-    threads.emplace_back(std::thread([buf, begin, chunk_size, h, w, p, &result] {
-          const int kh = p.kernel_height;
-          const int kw = p.kernel_width;
-          const int oc = p.output_channels;
-          for (int k = begin; k < std::min(begin + chunk_size, static_cast<unsigned int>(h * w)); ++k) {
-            for (unsigned int i = 0; i < (kh * kw); ++i) {
-              int offset = calc_offset(i, w);
-              if ((k - offset < 0) || (k - offset >= (h * w))) {
-                continue;
-              }
-
-              float* r = result.data(0, k);
-              float* b = buf.data(i*oc, k - offset);
-
-
-              unsigned int j = 0;
+      unsigned int j = 0;
 #ifdef USE_NEON
-              for (; j + 3 < oc; j += 4) {
-                float32x4_t b_ = vld1q_f32(b+j);
-                float32x4_t r_ = vld1q_f32(r+j);
-                float32x4_t r__ = vaddq_f32(b_, r_);
-                vst1q_f32(r+j, r__);
-              }
+      for (; j + 3 < oc; j += 4) {
+        float32x4_t b_ = vld1q_f32(b+j);
+        float32x4_t r_ = vld1q_f32(r+j);
+        float32x4_t r__ = vaddq_f32(b_, r_);
+        vst1q_f32(r+j, r__);
+      }
 #endif
-              for (; j < oc; ++j) {
-                r[j] += b[j];
-              }
-            }
-          }
-        }));
-  }
-
-  for (auto& th: threads) {
-    if (th.joinable())
-      th.join();
+      for (; j < oc; ++j) {
+        r[j] += b[j];
+      }
+    }
   }
 
   Measurement::Stop();

@@ -15,43 +15,58 @@ limitations under the License.
 
 #include "network.h"
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#else
+#define EMSCRIPTEN_KEEPALIVE
+#endif
 
+
+
+EMSCRIPTEN_KEEPALIVE
 extern "C" __attribute__ ((visibility ("default"))) Network* network_create()
 {
   return new Network();
 }
 
+EMSCRIPTEN_KEEPALIVE
 extern "C" __attribute__ ((visibility ("default"))) void network_delete(Network *nn)
 {
   if(nn != nullptr)
     delete nn;
 }
 
+EMSCRIPTEN_KEEPALIVE
 extern "C" __attribute__ ((visibility ("default"))) bool network_init(Network *nn)
 {
   return nn->init();
 }
 
+EMSCRIPTEN_KEEPALIVE
 extern "C" __attribute__ ((visibility ("default"))) int network_get_input_rank(Network *nn)
 {
   return nn->get_input_rank();
 }
 
+EMSCRIPTEN_KEEPALIVE
 extern "C" __attribute__ ((visibility ("default"))) int network_get_output_rank(Network *nn)
 {
   return nn->get_output_rank();
 }
 
+EMSCRIPTEN_KEEPALIVE
 extern "C" __attribute__ ((visibility ("default"))) void network_get_input_shape(Network *nn, int32_t *shape)
 {
   nn->get_input_shape(shape);
 }
 
+EMSCRIPTEN_KEEPALIVE
 extern "C" __attribute__ ((visibility ("default"))) void network_get_output_shape(Network *nn, int32_t *shape)
 {
   nn->get_output_shape(shape);
 }
 
+EMSCRIPTEN_KEEPALIVE
 extern "C" __attribute__ ((visibility ("default"))) void network_run(Network *nn, float *input, float *output)
 {
   nn->run(input, output);

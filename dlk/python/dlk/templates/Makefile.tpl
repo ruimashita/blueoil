@@ -67,11 +67,15 @@ LIB_AARCH64_SRC := $(wildcard $(SRC_DIR)/*.S) \
 LIB_AARCH64_OBJ := $(patsubst %.S, %.o, $(LIB_AARCH64_SRC))
 LIB_AARCH64_OBJ := $(patsubst %.cpp, %.o, $(LIB_AARCH64_OBJ))
 
-LIB_X86_SRC := \
-    $(SRC_DIR)/func/generic/batch_normalization.cpp \
+GENERIC_SRC := $(SRC_DIR)/func/generic/batch_normalization.cpp \
     $(SRC_DIR)/func/impl/generic/quantized_conv2d_kn2row.cpp \
     $(SRC_DIR)/matrix/generic/quantized_multiplication.cpp
+
+LIB_X86_SRC := $(GENERIC_SRC)
 LIB_X86_OBJ := $(patsubst %.cpp, %.o, $(LIB_X86_SRC))
+
+LIB_JS_SRC := $(GENERIC_SRC)
+LIB_JS_OBJ := $(patsubst %.cpp, %.o, $(LIB_JS_SRC))
 
 LIB_OBJ := $(patsubst %.cpp, %.o, $(LIB_SRC))
 OBJ := $(patsubst %.cpp, %.o, $(SRC))
@@ -95,6 +99,8 @@ LIBS_AARCH64 := lib_aarch64
 LIBS_ARM     := lib_arm
 
 LIBS_FPGA    := lib_fpga
+
+LIBS_JS     := lib_js
 
 ARS_X86     := ar_x86
 
@@ -131,6 +137,7 @@ clean:
 	-$(RM) $(LIB_ARM_OBJ)
 	-$(RM) $(LIB_FPGA_OBJ)
 	-$(RM) $(LIB_AARCH64_OBJ)
+	-$(RM) $(LIB_JS_OBJ)
 	-$(RM) $(OBJ)
 
 lm_x86:           CXX = g++
@@ -160,6 +167,9 @@ lib_arm:           CXXFLAGS +=
 lib_fpga:          CXX = arm-linux-gnueabihf-g++
 lib_fpga:          FLAGS += $(INCLUDES) -O3 -std=c++0x -fPIC -DUSE_NEON -DRUN_ON_FPGA -mcpu=cortex-a9 -mfpu=neon -mthumb -fvisibility=hidden -pthread -g -fopenmp
 lib_fpga:          CXXFLAGS +=
+
+lib_js:            CXX = em++
+lib_js:            FLAGS += $(INCLUDES) -O3 -std=c++0x -fPIC -fvisibility=hidden -pthread -g -s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall", "cwrap"]' -s ASSERTIONS=2 -s ENVIRONMENT=node -s DISABLE_EXCEPTION_CATCHING=0 -s -s TOTAL_MEMORY=50MB
 
 ar_x86:           AR = ar
 ar_x86:           CXX = g++
@@ -209,6 +219,9 @@ $(LIBS_ARM): $(LIB_OBJ) $(TVM_OBJ) $(LIB_ARM_OBJ)
 
 $(LIBS_FPGA): $(LIB_OBJ) $(TVM_OBJ) $(LIB_FPGA_OBJ)
 	$(CXX) $(FLAGS) $(LIB_OBJ) $(TVM_OBJ) $(LIB_FPGA_OBJ) -o $@.so $(CXXFLAGS) $(TVM_ARM_LIBS) -shared -pthread -ldl
+
+$(LIBS_JS): $(LIB_OBJ) $(LIB_JS_OBJ)
+	$(CXX) $(FLAGS) $(LIB_OBJ) $(LIB_JS_OBJ) -o $@.bc $(CXXFLAGS) -shared -ldl && $(CXX) $(FLAGS) lib_js.bc -o lib_js.js
 
 $(ARS_X86): $(LIB_OBJ) $(TVM_OBJ) $(LIB_X86_OBJ)
 	$(AR) $(LDFLAGS) libdlk_$(NAME).a $(LIB_OBJ) $(TVM_OBJ) $(TVM_X86_LIBS) $(LIB_X86_OBJ)
