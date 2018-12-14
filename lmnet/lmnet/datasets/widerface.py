@@ -176,6 +176,10 @@ class WiderFace(ObjectDetectionBase):
                     line = lines.pop(0)[:-1]
                     x, y, w, h, blur, expression, illumination, invalid, occlusion, pose, _ = line.split(" ")
                     temp = [int(x), int(y), int(w), int(h), 0]
+
+                    if int(w) < 10 or int(h) < 10:
+                        continue
+
                     bbox.append(temp)
                     label["blur"] = int(blur)
                     label["expression"] = int(expression)
