@@ -100,38 +100,40 @@ POST_PROCESSOR = Sequence([
 
 NETWORK = EasyDict()
 
-if '{{optimizer}}' == 'GradientDescentOptimizer':
-    NETWORK.OPTIMIZER_CLASS = tf.train.GradientDescentOptimizer
-elif '{{optimizer}}' == 'MomentumOptimizer':
-    NETWORK.OPTIMIZER_CLASS = tf.train.MomentumOptimizer
-    NETWORK.OPTIMIZER_KWARGS = {"momentum": 0.9}
-elif '{{optimizer}}' == 'AdamOptimizer':
-    NETWORK.OPTIMIZER_CLASS = tf.train.AdamOptimizer
+{% if optimizer == 'GradientDescentOptimizer' %}
+NETWORK.OPTIMIZER_CLASS = tf.train.GradientDescentOptimizer
+{% elif optimizer == 'MomentumOptimizer' %}
+NETWORK.OPTIMIZER_CLASS = tf.train.MomentumOptimizer
+{% elif optimizer == 'AdamOptimizer' %}
+NETWORK.OPTIMIZER_CLASS = tf.train.AdamOptimizer
+{% endif %}
 
-if '{{learning_rate_setting}}' != 'fixed':
-    NETWORK.LEARNING_RATE_FUNC = tf.train.piecewise_constant
-                
-if '{{learning_rate_setting}}' == 'tune1':
-    NETWORK.LEARNING_RATE_KWARGS = {
-        "values": [{{initial_learning_rate}}, {{initial_learning_rate}} / 10, {{initial_learning_rate}} / 100],
-        "boundaries": [int((step_per_epoch * (MAX_EPOCHS - 1)) / 2), int(step_per_epoch * (MAX_EPOCHS - 1))],
-    }
-elif '{{learning_rate_setting}}' == 'tune2':
-    NETWORK.LEARNING_RATE_KWARGS = {
-        "values": [{{initial_learning_rate}}, {{initial_learning_rate}} / 10, {{initial_learning_rate}} / 100, {{initial_learning_rate}} / 1000],
-        "boundaries": [int((step_per_epoch * (MAX_EPOCHS - 1)) * 1 / 3), int((step_per_epoch * (MAX_EPOCHS - 1)) * 2 / 3), int(step_per_epoch * (MAX_EPOCHS - 1))],
-    }
-elif '{{learning_rate_setting}}' == 'tune3':
-    if MAX_EPOCHS < 4:
-        raise ValueError("epoch number must be >= 4, when tune3 is selected.")
-    NETWORK.LEARNING_RATE_KWARGS = {
-        "values": [{{initial_learning_rate}} / 1000, {{initial_learning_rate}}, {{initial_learning_rate}} / 10, {{initial_learning_rate}} / 100, {{initial_learning_rate}} / 1000],
-        "boundaries": [int(step_per_epoch * 1), int((step_per_epoch * (MAX_EPOCHS - 1)) * 1 / 3), int((step_per_epoch * (MAX_EPOCHS - 1)) * 2 / 3), int(step_per_epoch * (MAX_EPOCHS - 1))],
-    }
-elif '{{learning_rate_setting}}' == 'fixed':
-    NETWORK.OPTIMIZER_KWARGS = {"momentum": 0.9, "learning_rate": {{initial_learning_rate}}}
-else:
-    raise ValueError
+{% if learning_rate_setting == 'fixed' %}
+NETWORK.OPTIMIZER_KWARGS = {"momentum": 0.9, "learning_rate": {{initial_learning_rate}}}
+{% else %}
+NETWORK.OPTIMIZER_KWARGS = {"momentum": 0.9}
+NETWORK.LEARNING_RATE_FUNC = tf.train.piecewise_constant
+{% endif %}
+
+{% if learning_rate_setting == 'tune1' %}
+NETWORK.LEARNING_RATE_KWARGS = {
+    "values": [{{initial_learning_rate}}, {{initial_learning_rate}} / 10, {{initial_learning_rate}} / 100],
+    "boundaries": [int((step_per_epoch * (MAX_EPOCHS - 1)) / 2), int(step_per_epoch * (MAX_EPOCHS - 1))],
+}
+{% elif learning_rate_setting == 'tune2' %}
+NETWORK.LEARNING_RATE_KWARGS = {
+    "values": [{{initial_learning_rate}}, {{initial_learning_rate}} / 10, {{initial_learning_rate}} / 100, {{initial_learning_rate}} / 1000],
+    "boundaries": [int((step_per_epoch * (MAX_EPOCHS - 1)) * 1 / 3), int((step_per_epoch * (MAX_EPOCHS - 1)) * 2 / 3), int(step_per_epoch * (MAX_EPOCHS - 1))],
+}
+{% elif learning_rate_setting == 'tune3' %}
+if MAX_EPOCHS < 4:
+    raise ValueError("epoch number must be >= 4, when tune3 is selected.")
+
+NETWORK.LEARNING_RATE_KWARGS = {
+    "values": [{{initial_learning_rate}} / 1000, {{initial_learning_rate}} / 100, {{initial_learning_rate}}, {{initial_learning_rate}} / 10, {{initial_learning_rate}} / 100, {{initial_learning_rate}} / 1000],
+    "boundaries": [int(step_per_epoch * 2), int(step_per_epoch * 4), int((step_per_epoch * (MAX_EPOCHS - 1)) * 1 / 3), int((step_per_epoch * (MAX_EPOCHS - 1)) * 2 / 3), int(step_per_epoch * (MAX_EPOCHS - 1))],
+}
+{% endif %}
 
 NETWORK.IMAGE_SIZE = IMAGE_SIZE
 NETWORK.BATCH_SIZE = BATCH_SIZE
@@ -156,7 +158,7 @@ NETWORK.ACTIVATION_QUANTIZER_KWARGS = {
 }
 NETWORK.WEIGHT_QUANTIZER = binary_channel_wise_mean_scaling_quantizer
 NETWORK.WEIGHT_QUANTIZER_KWARGS = {}
-NETWORK.QUANTIZE_FIRST_CONVOLUTION = True
+NETWORK.QUANTIZE_FIRST_CONVOLUTION = {{quantize_first_convolution}}
 NETWORK.QUANTIZE_LAST_CONVOLUTION = False
 
 # dataset
@@ -165,10 +167,12 @@ DATASET.BATCH_SIZE = BATCH_SIZE
 DATASET.DATA_FORMAT = DATA_FORMAT
 DATASET.PRE_PROCESSOR = PRE_PROCESSOR
 DATASET.AUGMENTOR = Sequence([
+    SSDRandomCrop(min_crop_ratio=0.7),
+    ResizeWithGtBoxes(size=IMAGE_SIZE),
     FlipLeftRight(is_bounding_box=True),
     Brightness((0.75, 1.25)),
     Color((0.75, 1.25)),
     Contrast((0.75, 1.25)),
     Hue((-10, 10)),
-    SSDRandomCrop(min_crop_ratio=0.7),
 ])
+DATASET.ENABLE_PREFETCH = True
