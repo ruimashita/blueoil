@@ -90,7 +90,6 @@ function onRuntimeInitialized() {
         input_size *= input_shape[i];
     }
 
-    console.log("c");
     var input = new Float32Array(input_size);
     // expects RGBRGBRGB...
     for (var i = 0; i < input_size; i++) {
