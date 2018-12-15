@@ -11,7 +11,6 @@ execute following commands
 $ cd ../../project.prj/
 $ make clean && make -j8 lib_js
 $ cd ../output/js
-$ cp ../../project.prj/lib_js.js lib.js
-cp ../../project.prj/lib_js.wasm libblueoil.
+$ cp ../../project.prj/lib_js.* .
 $ node benchmark.js
 ```
