@@ -62,10 +62,12 @@ function nn_run(nn, input) {
         output_size *= output_shape[i];
     }
 
+    console.log("d1");
     var output = new Float32Array(output_size);
     var input_ = convertToUint8Array(input);
     var output_ = convertToUint8Array(output);
 
+    console.log("d2");
     var network_run = em_module.cwrap("network_run", "", ["number", "number", "number"]);
     var start = Date.now();
     network_run(nn, input_.byteOffset, output_.byteOffset);
@@ -83,13 +85,17 @@ function nn_run(nn, input) {
 // main function, read from here
 em_module['onRuntimeInitialized'] = onRuntimeInitialized;
 function onRuntimeInitialized() {
+
     var nn = init();
+    console.log("aaa");
     var input_size = 1;
     var input_shape = nn_get_input_shape(nn);
+    console.log("bbb");
     for (var i = 0; i < input_shape.length; i++) {
         input_size *= input_shape[i];
     }
 
+    console.log("ccc");
     var input = new Float32Array(input_size);
     // expects RGBRGBRGB...
     for (var i = 0; i < input_size; i++) {
@@ -97,9 +103,9 @@ function onRuntimeInitialized() {
         input[i] = r;
     }
 
-
+    console.log("ddd");
     var result = nn_run(nn, input);
-
+    console.log("eee");
     var start = Date.now();
     var trial = 100;
     for (var i = 0; i < trial; i++) {
