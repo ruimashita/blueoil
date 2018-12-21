@@ -3,26 +3,31 @@
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 		<title>blueoil js</title>
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.2/css/bulma.min.css">
 		<style>
 		 #video {
-			 width: 512px;
-			 height: 288px;
+			 display: none;
+		 }
+		 #inference {
+			 width: 160px;
+			 height: 160px;
 			 display: none;
 		 }
 		 #canvas {
-			 width: 160px;
-			 height: 160px;
+			 width: 480px;
+			 height: 480px;
 		 }
 		</style>
 	</head>
 	<body>
-		<h2>blueoil js</h2>
 		<video id="video" autoplay></video>
+		<canvas id="inference"></canvas>
 		<canvas id="canvas"></canvas>
-
 		<script type="text/javascript" src="./libs/lib_web.js"></script>
 		<script type="text/javascript" src="./src/network.js"></script>
 		<script type="text/javascript" src="./src/post_process.js"></script>
 		<script type="text/javascript" src="./app.js"></script>
+		
+
 	</body>
 </html>

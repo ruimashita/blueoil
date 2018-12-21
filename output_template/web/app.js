@@ -4,19 +4,24 @@ let inputShape
 
 // Init app
 const video = document.getElementById('video')
+const inference = document.getElementById('inference')
 const canvas = document.getElementById('canvas')
-const ctx = canvas.getContext('2d')
-// const canvasCopy = document.getElementById("canvascopy");
-// const copyContext = canvasCopy.getContext('2d');
+const inferenceCtx = inference.getContext('2d')
+const canvasCtx = canvas.getContext('2d')
+// const inferenceCopy = document.getElementById("inferencecopy");
+// const copyContext = inferenceCopy.getContext('2d');
 
 const videoWidth = video.offsetWidth
 const videoHeight = video.offsetHeight
 
-canvas.width  = 160;
-canvas.height = 160;
+const canvas_size = 480;
+inference.width  = 160;
+inference.height = 160;
+inference.setAttribute("width", 160);
+inference.setAttribute("height", 160);
 
-canvas.setAttribute("width", 160);
-canvas.setAttribute("height", 160);
+canvas.width  = canvas_size;
+canvas.height = canvas_size;
 
 
 const params = {
@@ -38,8 +43,12 @@ const nms = new NMS(params.classes, params.iou_threshold)
 var counter = 0;
 
 const update = () => {
+    // reuslt boxes.
+    let boxes = new Array()
+
     // Get image data
-    const imageData = ctx.getImageData(0, 0, 160, 160)
+    const imageData = inferenceCtx.getImageData(0, 0, 160, 160)
+    let start = performance.now();
 
     let input_size = inputShape.reduce((x, y) => {return x*y})
     let input = new Float32Array(input_size)
@@ -53,20 +62,46 @@ const update = () => {
         }
     }
 
-    var boxes = new Array()
-
+    // run network
+    let nn_start = performance.now()
     var result = nn_run(nn, input)
+    let nn_end = performance.now()
+
+    // run post process.
     boxes = format_yolo_v2.run(result);
     boxes = nms.run(boxes)
-    ctx.drawImage(video,
+
+    let end = performance.now()
+
+
+    inferenceCtx.drawImage(video,
                   (video.videoWidth - video.videoHeight)/2, 0, video.videoHeight, video.videoHeight,
                   0, 0, 160, 160)
+
+    canvasCtx.drawImage(video,
+                  (video.videoWidth - video.videoHeight)/2, 0, video.videoHeight, video.videoHeight,
+                  0, 0, canvas_size, canvas_size)
+
+    let all_fps = (1000/(end - start)).toFixed(2)
+    let network_fps = (1000/(nn_end - nn_start)).toFixed(2)
+    canvasCtx.font = "30px Georgia";
+    canvasCtx.fillText("FPS: " + all_fps, 10, 30);
+    canvasCtx.font = "16px Georgia";
+    canvasCtx.fillText("FPS (only network): " + network_fps, 10, 50);
+
     for (let box of boxes){
-        ctx.strokeStyle = "rgb(200, 0, 0)";
-        ctx.strokeRect(box[0], box[1], box[2], box[3])
+        canvasCtx.lineWidth = 4;
+        canvasCtx.strokeStyle = "rgb(200, 75, 75)";
+        canvasCtx.strokeRect(
+            box[0] * canvas_size/160,
+            box[1] * canvas_size/160,
+            box[2] * canvas_size/160,
+            box[3] * canvas_size/160
+        )
     }
 
-    // debug
+    // for debug
+    //
     // counter++;
     // if( counter > 1000 ) {
     //     return;

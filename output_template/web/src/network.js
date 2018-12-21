@@ -67,12 +67,11 @@ function convertToUint8Array(typedArray) {
       var network_run = Module.cwrap("network_run", "", ["number", "number", "number"]);
       var start = Date.now();
       network_run(nn, input_.byteOffset, output_.byteOffset);
-  
+
       var end = Date.now();
-      console.log("elapsed:", (end - start));
-  
+
       var r = uint8ArrayToFloat32Array(output_);
-  
+
       _freeArray(input_);
       _freeArray(output_);
       return r;
