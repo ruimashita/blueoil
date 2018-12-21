@@ -67,10 +67,10 @@ const update = () => {
     }
 
     // debug
-    counter++;
-    if( counter > 1000 ) {
-        return;
-    }
+    // counter++;
+    // if( counter > 1000 ) {
+    //     return;
+    // }
 
     window.requestAnimationFrame(update)
 }
