@@ -103,9 +103,34 @@ NETWORK.LEARNING_RATE_FUNC = tf.train.piecewise_constant
 
 dataset_obj = DATASET_CLASS(subset="train", batch_size=1)
 step_per_epoch = int(dataset_obj.num_per_epoch / BATCH_SIZE)
+
+init_lr = 0.0001
+max_lr = 0.05
+last_lr = 0.001
+
+values = [init_lr]
+boundaries = []
+
+for i in range(1, 40):
+    values.append(max_lr * float(i) / 40 + init_lr)
+    boundaries.append(step_per_epoch * i)
+
+for i in range(40, 80):
+    values.append(max_lr - max_lr * float(i-40) / 40 + last_lr)
+    boundaries.append(step_per_epoch * i)
+
+values.append(last_lr)
+boundaries.append(step_per_epoch * 85)
+
+values.append(last_lr * 0.1)
+boundaries.append(step_per_epoch * 90)
+
+values.append(last_lr * 0.01)
+boundaries.append(step_per_epoch * 95)
+
 NETWORK.LEARNING_RATE_KWARGS = {
-        "values": [5e-4, 2e-2, 5e-3, 5e-4],
-        "boundaries": [step_per_epoch, step_per_epoch * 80, step_per_epoch * 120],
+        "values": values,
+        "boundaries": boundaries,
 }
 NETWORK.IMAGE_SIZE = IMAGE_SIZE
 NETWORK.BATCH_SIZE = BATCH_SIZE
@@ -140,7 +165,7 @@ DATASET.PRE_PROCESSOR = PRE_PROCESSOR
 DATASET.AUGMENTOR = Sequence([
     SSDRandomCrop(min_crop_ratio=0.7),
     ResizeWithGtBoxes(size=IMAGE_SIZE),
-    FlipLeftRight(is_bounding_box=True),
+    FlipLeftRight(),
     Brightness((0.75, 1.25)),
     Color((0.75, 1.25)),
     Contrast((0.75, 1.25)),
