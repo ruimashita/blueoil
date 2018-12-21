@@ -114,8 +114,8 @@ class FormatYoloV2 {
         }
         }
         }
-        console.log(output)
-        console.log("format end")
+        // console.log(output)
+        // console.log("format end")
         return output
     }
 
