@@ -1,0 +1,20 @@
+{
+    "name": "blueoilweb",
+    "version": "0.0.2",
+    "description": "",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron .",
+        "package": "electron-packager ./ blueoil --platform=linux --platform=darwin --icon=blueoil_homeicon.icns",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "dependencies": {
+        "http-server": "^0.11.1"
+    },
+    "devDependencies": {
+        "electron": "^4.0.0",
+        "electron-packager": "^13.0.1"
+    },
+    "author": "",
+    "license": ""
+}
