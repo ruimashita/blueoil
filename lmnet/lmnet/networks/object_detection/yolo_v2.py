@@ -65,6 +65,7 @@ class YoloV2(BaseNetwork):
             is_dynamic_image_size=False,
             use_cross_entropy_loss=True,
             change_base_output=False,
+            downsample_size=32,
             *args,
             **kwargs
     ):
@@ -105,10 +106,13 @@ class YoloV2(BaseNetwork):
         self.is_dynamic_image_size = is_dynamic_image_size
         self.change_base_output = change_base_output
 
+        # TODO(wakisaka)
+        self.downsample_size = downsample_size
+
         # Assert image size can mod `32`.
         # TODO(wakisaka): Be enable to cnahge `32`. it depends on pooling times.
-        assert self.image_size[0] % 32 == 0
-        assert self.image_size[1] % 32 == 0
+        assert self.image_size[0] % self.downsample_size == 0
+        assert self.image_size[1] % self.downsample_size == 0
 
         if self.is_dynamic_image_size:
             self.image_size = tf.tuple([
@@ -117,9 +121,9 @@ class YoloV2(BaseNetwork):
 
             # TODO(wakisaka): Be enable to cnahge `32`. it depends on pooling times.
             # Number of cell is the spatial dimension of the final convolutional features.
-            self.num_cell = tf.tuple([tf.to_int32(self.image_size[0] / 32), tf.to_int32(self.image_size[1] / 32)])
+            self.num_cell = tf.tuple([tf.to_int32(self.image_size[0] / self.downsample_size), tf.to_int32(self.image_size[1] / self.downsample_size)])
         else:
-            self.num_cell = self.image_size[0] // 32, self.image_size[1] // 32
+            self.num_cell = self.image_size[0] // self.downsample_size, self.image_size[1] // self.downsample_size
 
         self.loss_function = YoloV2Loss(
             is_debug=self.is_debug,
