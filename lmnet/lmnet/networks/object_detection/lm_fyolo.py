@@ -260,15 +260,14 @@ class LMFYoloV2(YoloV2):
         merged = tf.concat([x8, x7, x6_s2d, x5_s2d, x4_s2d],
                            axis=concat_axis, name="block_merged")
 
-        x = darknet_block("block_9", merged, filters=256, kernel_size=3)
-        x = darknet_block("block_10", x, filters=128, kernel_size=3)
-        x = darknet_block("block_11", x, filters=128, kernel_size=3)
+        x = darknet_block("block_9", merged, filters=64, kernel_size=3)
+        x = darknet_block("block_10", x, filters=64, kernel_size=3)
+        x = darknet_block("block_11", x, filters=64, kernel_size=3)
 
         x = connect_block(lateral=c2, up=x, name="connect_block1")
         x = connect_block(lateral=c1, up=x, name="connect_block2")
 
-        x = darknet_block("block_12", x, filters=128, kernel_size=3)
-        x = darknet_block("block_13", x, filters=256, kernel_size=3, activation=self.before_last_activation)
+        x = darknet_block("block_13", x, filters=64, kernel_size=3, activation=self.before_last_activation)
 
         output_filters = (self.num_classes + 5) * self.boxes_per_cell
         self.block_last = conv2d("block_last", x, filters=output_filters, kernel_size=1,
