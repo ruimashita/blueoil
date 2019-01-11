@@ -350,9 +350,11 @@ def test_pascalvoc_2007_2012():
     assert Pascalvoc20072012.count_max_boxes() == num_max_boxes
     assert dataset.num_per_epoch == num_train_val_2007 + num_train_val_2012
 
+    print("train num boxes", dataset.num_boxes)
     val_dataset = Pascalvoc20072012(subset="validation", batch_size=batch_size,
                                     pre_processor=ResizeWithGtBoxes(image_size))
     assert val_dataset.num_per_epoch == num_test_2007
+    print("val num boxes", val_dataset.num_boxes)
 
     for _ in range(STEP_SIZE):
         images, labels = dataset.feed()
@@ -702,17 +704,17 @@ def test_bdd100k():
 
 
 if __name__ == '__main__':
-    test_caltech101()
-    test_cifar10()
-    test_camvid()
-    test_pascalvoc_2007()
-    test_pascalvoc_2007_with_target_classes()
-    test_pascalvoc_2012()
+    # test_caltech101()
+    # test_cifar10()
+    # test_camvid()
+    # test_pascalvoc_2007()
+    # test_pascalvoc_2007_with_target_classes()
+    # test_pascalvoc_2012()
     test_pascalvoc_2007_2012()
-    test_lm_things_of_a_table()
-    test_mscoco()
-    test_mscoco_object_detection()
-    test_mscoco_object_detection_person()
-    test_ilsvrc_2012()
-    test_widerface()
-    test_bdd100k()
+    # test_lm_things_of_a_table()
+    # test_mscoco()
+    # test_mscoco_object_detection()
+    # test_mscoco_object_detection_person()
+    # test_ilsvrc_2012()
+    # test_widerface()
+    # test_bdd100k()

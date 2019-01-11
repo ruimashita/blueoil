@@ -266,7 +266,6 @@ class Pascalvoc20072012(ObjectDetectionBase):
           images: images numpy array. shape is [batch_size, height, width]
           gt_boxes_list: gt_boxes numpy array. shape is [batch_size, num_max_boxes, 5(x, y, w, h, class_id)]
         """
-
         images, gt_boxes_list = self.get_data()
 
         if self.use_prefetch:
@@ -279,3 +278,14 @@ class Pascalvoc20072012(ObjectDetectionBase):
             images = np.transpose(images, [0, 3, 1, 2])
 
         return images, gt_boxes_list
+
+    @property
+    def num_boxes(self):
+        num_boxes = 0
+        images, gt_boxes_list = zip(
+            *[self._one_data() for _ in range(self.num_per_epoch)])
+
+        for gt_boxes in gt_boxes_list:
+            num_boxes += len(gt_boxes)
+
+        return num_boxes

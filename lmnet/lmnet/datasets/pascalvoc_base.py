@@ -152,6 +152,7 @@ class PascalvocBase(ObjectDetectionBase):
                 # Exclude the samples labeled as difficult
                 # It is the same py-faster-rcnn setting
                 # https://github.com/rbgirshick/py-faster-rcnn/blob/96dc9f1dea3087474d6da5a98879072901ee9bf9/lib/datasets/pascal_voc.py#L47
+                print("difficult", difficult, difficult == 1)
                 if difficult == 1:
                     continue
 
