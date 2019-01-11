@@ -79,7 +79,7 @@ class PascalvocBase(ObjectDetectionBase):
             *args,
             **kwargs
     ):
-        self.skip_difficult = kwargs.pop("skip_difficult", False)
+        self.skip_difficult = kwargs.pop("skip_difficult", True)
 
         super().__init__(
             subset=subset,
