@@ -48,7 +48,7 @@ from lmnet.datasets.widerface import WiderFace
 from lmnet.datasets.bdd100k import BDD100K
 
 
-IS_DEBUG = False
+IS_DEBUG = True
 
 
 def _show_images(images):
@@ -151,26 +151,28 @@ def test_pascalvoc_2007():
     num_validation = 2510
     num_test = 4952
 
-    assert Pascalvoc2007.count_max_boxes() == num_max_boxes
+    # assert Pascalvoc2007.count_max_boxes() == num_max_boxes
 
     dataset = Pascalvoc2007(batch_size=batch_size,
                             pre_processor=ResizeWithGtBoxes(image_size))
-    assert dataset.num_per_epoch == num_train
+    # assert dataset.num_per_epoch == num_train
 
-    val_dataset = Pascalvoc2007(
-        subset="validation",
-        batch_size=batch_size,
-        pre_processor=ResizeWithGtBoxes(image_size))
-    assert val_dataset.num_per_epoch == num_validation
+    # val_dataset = Pascalvoc2007(
+    #     subset="validation",
+    #     batch_size=batch_size,
+    #     pre_processor=ResizeWithGtBoxes(image_size))
+    # assert val_dataset.num_per_epoch == num_validation
 
-    test_dataset = Pascalvoc2007(
-        subset="test",
-        batch_size=batch_size,
-        pre_processor=ResizeWithGtBoxes(image_size))
-    assert test_dataset.num_per_epoch == num_test
+    # test_dataset = Pascalvoc2007(
+    #     subset="test",
+    #     batch_size=batch_size,
+    #     pre_processor=ResizeWithGtBoxes(image_size))
+    # assert test_dataset.num_per_epoch == num_test
 
     for _ in range(STEP_SIZE):
         images, labels = dataset.feed()
+
+        _show_images_with_boxes(images, labels)
 
         assert isinstance(images, np.ndarray)
         assert images.shape[0] == batch_size
@@ -702,17 +704,17 @@ def test_bdd100k():
 
 
 if __name__ == '__main__':
-    test_caltech101()
-    test_cifar10()
-    test_camvid()
+    # test_caltech101()
+    # test_cifar10()
+    # test_camvid()
     test_pascalvoc_2007()
-    test_pascalvoc_2007_with_target_classes()
-    test_pascalvoc_2012()
-    test_pascalvoc_2007_2012()
-    test_lm_things_of_a_table()
-    test_mscoco()
-    test_mscoco_object_detection()
-    test_mscoco_object_detection_person()
-    test_ilsvrc_2012()
-    test_widerface()
-    test_bdd100k()
+    # test_pascalvoc_2007_with_target_classes()
+    # test_pascalvoc_2012()
+    # test_pascalvoc_2007_2012()
+    # test_lm_things_of_a_table()
+    # test_mscoco()
+    # test_mscoco_object_detection()
+    # test_mscoco_object_detection_person()
+    # test_ilsvrc_2012()
+    # test_widerface()
+    # test_bdd100k()
