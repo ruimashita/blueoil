@@ -199,6 +199,8 @@ class PascalvocBase(ObjectDetectionBase):
         all_image_ids = self._all_image_ids(data_type)
         all_gt_boxes_list = [self._gt_boxes_from_image_id(image_id) for image_id in all_image_ids]
 
+        all_image_ids = [8690]
+
         if self.classes == self.default_classes:
             return all_image_ids
 
