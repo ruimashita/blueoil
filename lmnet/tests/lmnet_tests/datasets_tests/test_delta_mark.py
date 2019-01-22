@@ -179,8 +179,6 @@ def test_delta_mark_object_detection():
 
     for _ in range(2):
         images, labels = train_dataset.feed()
-        print(images.shape)
-        print(labels.shape)
         _show_images_with_boxes(images, labels)
 
         assert isinstance(images, np.ndarray)
