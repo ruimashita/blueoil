@@ -24,7 +24,7 @@ import PIL.Image
 
 from lmnet.datasets.base import Base, StoragePathCustomizable
 from lmnet import data_processor
-from lmnet.utils.random import shuffle, train_test_split
+from lmnet.utils.random import train_test_split
 
 
 class ImageFolderBase(StoragePathCustomizable, Base):

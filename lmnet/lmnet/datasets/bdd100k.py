@@ -4,7 +4,6 @@ import functools
 from os.path import join, splitext, basename
 import glob
 
-from PIL import Image
 import numpy as np
 import json
 

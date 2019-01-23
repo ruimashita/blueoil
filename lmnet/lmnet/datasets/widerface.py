@@ -16,7 +16,6 @@
 import os
 import functools
 
-from PIL import Image
 import numpy as np
 
 from lmnet.datasets.base import ObjectDetectionBase

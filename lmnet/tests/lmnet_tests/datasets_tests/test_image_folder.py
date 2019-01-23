@@ -39,6 +39,7 @@ def setup_dataset(dataset_class, subset, **kwargs):
     dataset = dataset_class(subset=subset, **kwargs)
     return DatasetIterator(dataset, seed=0)
 
+
 def test_image_folder():
     validation_size = 0.2
     batch_size = 3

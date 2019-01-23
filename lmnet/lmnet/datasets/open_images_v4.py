@@ -239,7 +239,6 @@ class OpenImagesV4Classification(OpenImagesV4):
             **kwargs,
         )
 
-
     @property
     def annotations_csv(self):
         return os.path.join(

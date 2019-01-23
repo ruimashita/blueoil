@@ -5,7 +5,7 @@ import threading
 import numpy as np
 import os
 import queue
-from lmnet.datasets.base import Base, SegmentationBase, ObjectDetectionBase
+from lmnet.datasets.base import SegmentationBase, ObjectDetectionBase
 
 
 _dataset = None
@@ -25,7 +25,6 @@ def _feed(i):
 
 
 def _apply_augmentations(dataset, image, label):
-    subset = dataset.subset
     augmentor = dataset.augmentor
     pre_processor = dataset.pre_processor
 
@@ -181,9 +180,6 @@ class _MultiProcessDatasetPrefetchThread(threading.Thread):
         result = []
         for i in task_list:
             image, label = self.dataset[i]
-            subset = self.dataset.subset
-            augmentor = self.dataset.augmentor
-            pre_processor = self.dataset.pre_processor
             image, label = _apply_augmentations(self.dataset, image, label)
             result.append((image, label))
         return _concat_data(result)
