@@ -122,6 +122,9 @@ class BDD100K(ObjectDetectionBase):
 
         return image, gt_boxes
 
+    def __len__(self):
+        return self.num_per_epoch
+
 
 def check_dataset():
     train = BDD100K(subset="train")

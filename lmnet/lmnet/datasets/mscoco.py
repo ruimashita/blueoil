@@ -188,7 +188,6 @@ class MscocoObjectDetection(ObjectDetectionBase):
         for subset in cls.available_subsets:
             obj = cls(subset=subset)
             gt_boxes_list = obj.annotations
-
             subset_max = max([len(gt_boxes) for gt_boxes in gt_boxes_list])
             if subset_max >= num_max_boxes:
                 num_max_boxes = subset_max
@@ -304,17 +303,27 @@ class MscocoObjectDetectionPerson(MscocoObjectDetection):
     @functools.lru_cache(maxsize=None)
     def _gt_boxes_from_image_id(self, image_id):
         """Return gt boxes list ([[x, y, w, h, class_id]]) of a image."""
-        gt_boxes = super()._gt_boxes_from_image_id(image_id)
+
+        person_class_id = self.coco.getCatIds(catNms=['person'])[0]
 
         boxes = []
+        annotation_ids = self.coco.getAnnIds(imgIds=[image_id], iscrowd=None)
+        annotations = self.coco.loadAnns(annotation_ids)
+        for annotation in annotations:
+            category_id = annotation['category_id']
+            if category_id != person_class_id:
+                continue
 
-        for box in gt_boxes:
+            class_id = self.coco_category_id_to_lmnet_class_id(category_id)
+            box = annotation["bbox"] + [class_id]
+
             w = box[2]
             h = box[3]
             size = w * h
             # remove small box.
             if size < self.threshold_size:
                 continue
+
             boxes.append(box)
 
         return boxes
@@ -322,18 +331,16 @@ class MscocoObjectDetectionPerson(MscocoObjectDetection):
     @property
     @functools.lru_cache(maxsize=None)
     def _image_ids(self):
-        """Return all files and gt_boxes list."""
-        image_ids = super()._image_ids
-
-        new_image_ids = []
-
-        for image_id in image_ids:
+        """Return all files which contains person bounding boxes."""
+        image_ids = []
+        classes = ['person']
+        target_class_ids = self.coco.getCatIds(catNms=['person'])
+        for image_id in self.coco.getImgIds(catIds=[target_class_ids[0]]):
             gt_boxes = self._gt_boxes_from_image_id(image_id)
-
             if len(gt_boxes) > 0:
-                new_image_ids.append(image_id)
+                image_ids.append(image_id)
 
-        return new_image_ids
+        return image_ids
 
 
 def main():

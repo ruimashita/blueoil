@@ -24,7 +24,6 @@ import pandas as pd
 
 from lmnet.datasets.base import Base
 from lmnet import data_processor
-from lmnet.utils.random import shuffle
 
 
 class Ilsvrc2012(Base):
@@ -69,7 +68,6 @@ class Ilsvrc2012(Base):
 
     def _init_files_and_annotations(self):
         self.files, self.annotations = self._files_and_annotations()
-        self._shuffle()
 
     @functools.lru_cache(maxsize=None)
     def _files_and_annotations(self):
@@ -86,7 +84,6 @@ class Ilsvrc2012(Base):
 
         labels = df.class_id.tolist()
 
-        files, labels = shuffle(files, labels, seed=0)
         return files, labels
 
     def __getitem__(self, i, type=None):
