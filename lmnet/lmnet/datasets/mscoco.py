@@ -333,7 +333,6 @@ class MscocoObjectDetectionPerson(MscocoObjectDetection):
     def _image_ids(self):
         """Return all files which contains person bounding boxes."""
         image_ids = []
-        classes = ['person']
         target_class_ids = self.coco.getCatIds(catNms=['person'])
         for image_id in self.coco.getImgIds(catIds=[target_class_ids[0]]):
             gt_boxes = self._gt_boxes_from_image_id(image_id)
