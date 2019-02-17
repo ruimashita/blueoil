@@ -1,6 +1,5 @@
 from multiprocessing import Pool
 import time
-import sys
 import threading
 import numpy as np
 import os
@@ -18,10 +17,6 @@ def _prefetch_setup(dataset, seed, do_shuffle):
         np.random.seed(os.getpid()+seed)
         _dataset.seed = os.getpid() + seed
         _dataset._shuffle()
-
-
-def _feed(i):
-    return _dataset.feed()
 
 
 def _apply_augmentations(dataset, image, label):
@@ -78,7 +73,7 @@ def _xorshift32(r):
     return r & 0xFFFFFFFF
 
 
-class _MultiProcessDatasetPrefetchThread(threading.Thread):
+class _MultiProcessPrefetchThreadLoader(threading.Thread):
     def __init__(self, dataset, result_queue, seed):
         super().__init__()
         # TODO(tokunaga): the number of processes should be configurable
@@ -123,8 +118,7 @@ class _MultiProcessDatasetPrefetchThread(threading.Thread):
         self.pool = Pool(processes=8, initializer=_prefetch_setup,
                          initargs=(self.dataset, self.seed, not self.support_getitem))
 
-    # for new style dataset class
-    def loop_body_getitem(self):
+    def loop_body(self):
         task_list = self.gen_task(self.dataset.batch_size * 8)
         fetch_result = self.pool.map(_process_one_data, task_list)
         for fetch_result_chunk in self.chunks(fetch_result, self.batch_size):
@@ -137,25 +131,6 @@ class _MultiProcessDatasetPrefetchThread(threading.Thread):
                 except queue.Full:
                     if self.terminate:
                         break
-
-    # for current dataset class
-    def loop_body_feed(self):
-        fetch_result = self.pool.map(_feed, list(range(0, 200)))
-        for data_batch in fetch_result:
-            put_ok = False
-            while not put_ok:
-                try:
-                    self.result_queue.put(data_batch, 1)
-                    put_ok = True
-                except queue.Full:
-                    if self.terminate:
-                        break
-
-    def loop_body(self):
-        if self.support_getitem:
-            self.loop_body_getitem()
-        else:
-            self.loop_body_feed()
 
     def run(self):
         count = 0
@@ -175,44 +150,37 @@ class _MultiProcessDatasetPrefetchThread(threading.Thread):
             self.pool.close()
             self.pool.join()
 
-    def run_sync(self):
-        task_list = self.gen_task(self.dataset.batch_size)
+
+class _SimpleLoader:
+
+    def __init__(self, dataset, seed, shuffle):
+        self.dataset = dataset
+        self.seed = seed
+        self.shuffle = shuffle
+        self.data_ids = []
+
+    def _gen_ids(self, size):
+        """Generate ids which's length is `size`."""
+        for _ in range(0, size):
+            # when data_ids is empty, fill and shuffle.
+            if len(self.data_ids) == 0:
+                self.data_ids = list(range(0, len(self.dataset)))
+                if self.shuffle:
+                    self.seed = _xorshift32(self.seed)
+                    random_state = np.random.RandomState(self.seed)
+                    random_state.shuffle(self.data_ids)
+
+            id = self.data_ids.pop()
+            yield id
+
+    def get(self):
+        """Return batch size data."""
         result = []
-        for i in task_list:
+        for i in self._gen_ids(self.dataset.batch_size):
             image, label = self.dataset[i]
             image, label = _apply_augmentations(self.dataset, image, label)
             result.append((image, label))
         return _concat_data(result)
-
-
-# fallback class for the datasets that don't support multiprocess prefetching
-class _SingleProcessDatasetPrefetchThread(threading.Thread):
-    def __init__(self, dataset, result_queue, seed):
-        super().__init__()
-
-        self.seed = seed
-        self.result_queue = result_queue
-        self.batch_size = dataset.batch_size
-        self.index = 0
-        self.dataset = dataset
-        self.terminate = False
-
-    def run(self):
-        count = 0
-        while True:
-            if self.terminate:
-                break
-
-            data_batch = self.dataset.feed()
-            put_ok = False
-            while not put_ok:
-                try:
-                    self.result_queue.put(data_batch, 1)
-                    put_ok = True
-                except queue.Full:
-                    if self.terminate:
-                        break
-            count += 1
 
 
 class DatasetIterator:
@@ -220,24 +188,21 @@ class DatasetIterator:
     available_subsets = ["train", "train_validation_saving", "validation"]
 
     """docstring for DatasetIterator."""
-    def __init__(self, dataset, enable_prefetch=False, seed=0):
+    def __init__(self, dataset, enable_prefetch=False, seed=0, shuffle=True):
         self.dataset = dataset
         self.enable_prefetch = enable_prefetch
         self.seed = seed
 
         if self.enable_prefetch:
-            self.prefetch_result_queue = queue.Queue(maxsize=200)
+            self.prefetch_result_queue = queue.Queue(maxsize=100)
 
             if hasattr(dataset, "__getitem__"):
-                self.prefetcher = _MultiProcessDatasetPrefetchThread(self.dataset, self.prefetch_result_queue, seed)
-            else:
-                self.prefetcher = _SingleProcessDatasetPrefetchThread(self.dataset, self.prefetch_result_queue, seed)
+                self.loader = _MultiProcessPrefetchThreadLoader(self.dataset, self.prefetch_result_queue, seed)
 
-            self.prefetcher.start()
+            self.loader.start()
             print("ENABLE prefetch")
         else:
-            if hasattr(dataset, "__getitem__"):
-                self.prefetcher = _MultiProcessDatasetPrefetchThread(self.dataset, False, seed)
+            self.loader = _SimpleLoader(self.dataset, seed, shuffle)
             print("DISABLE prefetch")
 
     @property
@@ -266,13 +231,9 @@ class DatasetIterator:
     def __next__(self):
         if self.enable_prefetch:
             (images, labels) = self.prefetch_result_queue.get()
-            return images, labels
-        elif self.prefetcher:
-            (images, labels) = self.prefetcher.run_sync()
-            return images, labels
         else:
-            images, labels = self.dataset.feed()
-            return images, labels
+            images, labels = self.loader.get()
+        return images, labels
 
     def feed(self):
         return self.__next__()
@@ -282,14 +243,8 @@ class DatasetIterator:
 
     def update_dataset(self, indices):
         """Update own dataset by indices."""
-        if self.enable_prefetch:
-            # do nothing so far
-            return
-        elif hasattr(self.dataset, "update_dataset"):
-            self.dataset.update_dataset(indices)
-        else:
-            print("this dataset does not support distrituted training yet.")
-            sys.exit(1)
+        # do nothing so far
+        return
 
     def get_shuffle_index(self):
         """Return list of shuffled index."""
