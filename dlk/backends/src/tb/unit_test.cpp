@@ -46,14 +46,19 @@ bool parse_input_type(int argc, char const *argv[], input_type &in_type)
 bool test_conv(input_type &in_type)
 {
   srand((unsigned int)time(NULL));
-  bool res = true;
+  bool res = false;
 
   // test conv1x1
-  Conv_params_t conv1x1_p = new_Conv_params(conv1x1_params) res &= test_conv<1, 1>(in_type, conv1x1_p);
+  // Conv_params_t conv1x1_p = new_Conv_params(conv1x1_params) res &= test_conv<1, 1>(in_type, conv1x1_p);
 
   // test conv3x3
-  Conv_params_t conv3x3_p = new_Conv_params(conv3x3_params) res &= test_conv<3, 3>(in_type, conv3x3_p);
+  // Conv_params_t conv3x3_p = new_Conv_params(conv3x3_params) res &= test_conv<3, 3>(in_type, conv3x3_p);
 
+
+  Conv_params_t conv1x3_p = new_Conv_params(conv1x3_params) res &= test_conv<1, 3>(in_type, conv1x3_p);
+
+
+  printf("%s\n", res);
   return res;
 }
 

@@ -98,7 +98,7 @@ bool test_conv(input_type &in_type, Conv_params_t &p)
   }
 
   cpp::conv<KH, KW>(in_data, out_data, k_data, threshold_data, p.in_w, p.in_h, p.in_c, p.out_w, p.out_h, p.out_c,
-                    p.pad_w, p.stride_w);
+                    p.pad_w, p.pad_h, p.stride_w);
 
   kernel_transform_NHWC_to_NoHWCNi(k_data, k_data_conv_kn2row_tiling, p.k_n, KH, KW, p.k_c, p.num_pe);
   cpp::conv_kn2row_tiling<KH, KW>(in_data, out_data_conv_kn2row_tiling, k_data_conv_kn2row_tiling, threshold_data,
