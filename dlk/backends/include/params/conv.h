@@ -286,7 +286,7 @@ static const unsigned max_k_w = 3;
 static const unsigned min_k_h = 1;
 static const unsigned min_k_w = 1;
 
-static const unsigned tile_h = 16;
+static const unsigned tile_h = 1;
 static const unsigned tile_w = 32;
 
 static const unsigned in_tile_h = tile_h + (max_k_h - 1) * 2;
@@ -297,8 +297,6 @@ static const unsigned in_tile_w = tile_w + (max_k_w - 1) * 2;
 
 
 namespace conv1x3_params {
-static const unsigned tile_h = 1;
-  
 static const unsigned num_pe = conv3x3_params::num_pe;
 static const unsigned nbits_per_word = conv3x3_params::nbits_per_word;
 static const unsigned nbits_in_data = conv3x3_params::nbits_in_data;
@@ -355,7 +353,7 @@ static const unsigned k_size_packed = k_h * k_w * k_c_by_word * nbits_k_data;
 static const unsigned inb_h = k_h + 1;
 static const unsigned inb_w = k_w + 1;
 static const unsigned num_in_line = (max_in_w_with_pad * (k_h - 1)) + k_w;
-static const bool has_thresholds = false;
+static const bool has_thresholds = true;
 
 
 

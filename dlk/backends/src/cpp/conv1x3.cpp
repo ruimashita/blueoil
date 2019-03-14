@@ -61,7 +61,7 @@ void conv1x3_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_out threshol
 
               for (int kn = 0; kn < p::k_n; kn++) {
                 T_k k_buf = k_local[idx_k_local * p::k_n + kn];
-                std::cout << "kn: " << kn << " in_buf: " << in_buf << " k_buf: " << k_buf << std::endl;
+                // std::cout << "kn: " << kn << " in_buf: " << in_buf << " k_buf: " << k_buf << std::endl;
                 out[kn] += in_buf * k_buf;
               }
             }

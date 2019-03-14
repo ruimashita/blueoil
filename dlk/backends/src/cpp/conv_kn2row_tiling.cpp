@@ -12,7 +12,7 @@ namespace p = conv_kn2row_params;
 void conv_kn2row_tiling_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_out threshold_data[],
                              const unsigned in_w, const unsigned in_h, const unsigned in_c, const unsigned out_w,
                              const unsigned out_h, const unsigned out_c, const unsigned k_w, const unsigned k_h,
-                             const unsigned pad, const unsigned stride)
+                             const unsigned pad_w, const unsigned pad_h, const unsigned stride)
 {
   /// just alias for better understanding
   static const unsigned out_c_low = p::num_pe;
@@ -24,8 +24,8 @@ void conv_kn2row_tiling_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_o
   assert(k_w <= p::max_k_w);
   assert(k_w >= p::min_k_w);
 
-  for (int ih_high = 0; ih_high < in_h + 2 * pad; ih_high += p::tile_h) {
-    for (int iw_high = 0; iw_high < in_w + 2 * pad; iw_high += p::tile_w) {
+  for (int ih_high = 0; ih_high < in_h + 2 * pad_h; ih_high += p::tile_h) {
+    for (int iw_high = 0; iw_high < in_w + 2 * pad_w; iw_high += p::tile_w) {
       T_in in_buf[p::in_tile_h][p::in_tile_w][p::max_in_c];
 
       /// preload input
@@ -33,8 +33,8 @@ void conv_kn2row_tiling_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_o
         for (int iw_low = 0; iw_low < p::in_tile_w; ++iw_low) {
           /// index must care the padding, so we skip the padding part that
           /// doesn't exist in actuall memory.
-          int ih = (ih_low + ih_high - pad);
-          int iw = (iw_low + iw_high - pad);
+          int ih = (ih_low + ih_high - pad_h);
+          int iw = (iw_low + iw_high - pad_w);
           bool input_on = (ih >= 0) && (iw >= 0) && (ih < in_h) && (iw < in_w);
 
           for (int ic = 0; ic < in_c; ic++) {

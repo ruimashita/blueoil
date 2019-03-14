@@ -88,19 +88,19 @@ void qconv(T_q in_data_packed[], T_out out_data[], T_q k_data_packed[], unsigned
 void conv_kn2row_tiling_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_out threshold_data[],
                              const unsigned in_w, const unsigned in_h, const unsigned in_c, const unsigned out_w,
                              const unsigned out_h, const unsigned out_c, const unsigned k_w, const unsigned k_h,
-                             const unsigned pad, const unsigned stride);
+                             const unsigned pad_w, const unsigned pad_h, const unsigned stride);
 
 template <int KH, int KW>
 void conv_kn2row_tiling(T_in in_data[], T_out out_data[], T_k k_data[], T_out threshold_data[], const unsigned in_w,
                         const unsigned in_h, const unsigned in_c, const unsigned out_w, const unsigned out_h,
-                        const unsigned out_c, const unsigned pad, const unsigned stride)
+                        const unsigned out_c, const unsigned pad_w, const unsigned pad_h,  const unsigned stride)
 {
   /* assert(((KH == 3) && (KW == 3)) || ((KH == 1) && (KW == 1))); */
   /* assert(((KH == 3) && (pad == 1)) || ((KH == 1) && (pad == 0))); */
   assert(stride == 1);
 
   cpp::conv_kn2row_tiling_impl(in_data, out_data, k_data, threshold_data, in_w, in_h, in_c, out_w, out_h, out_c, KW, KW,
-                               pad, stride);
+                               pad_w, pad_h, stride);
 }
 
 void qconv_kn2row_tiling_impl(T_q in_data[], T_out out_data[], T_q k_data[], T_out threshold_data[],
