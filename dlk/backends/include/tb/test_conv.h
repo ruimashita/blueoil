@@ -72,10 +72,11 @@ bool test_conv(input_type &in_type, Conv_params_t &p)
 
   if (in_type == SEQUENTIAL) {
     // for (int i = 0; i < p.in_size; i++) { in_data[i] = 0; }
-    for (int i = 0; i < p.in_size; i++) { in_data[i] = (i % 8) + 4; }
+    for (int i = 0; i < p.in_size; i++) { in_data[i] = (i % 32); }
 
     // for (int i = 0; i < p.k_size * p.k_n; i++) { k_data[i] = (i % 2 == 0) ? 1 : -1; }
-    for (int i = 0; i < p.k_size * p.k_n; i++) { k_data[i] = - (i % 8); }
+    for (int i = 0; i < p.k_size * p.k_n; i++) { k_data[i] = (i % 2 == 0) ? 10 : -111; }
+    // for (int i = 0; i < p.k_size * p.k_n; i++) { k_data[i] = -((i % 2) + 100); }
   } else if (in_type == RANDOM) {
     for (int i = 0; i < p.in_size; i++) { in_data[i] = gen_random_value<T_in>(4, 1, 0); }
     for (int i = 0; i < p.k_size * p.k_n; i++) { k_data[i] = gen_random_value<T_k>(2, 2, 1); }

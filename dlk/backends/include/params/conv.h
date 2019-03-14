@@ -333,7 +333,7 @@ static const unsigned in_size = in_h * in_w * in_c;
 static const unsigned in_size_packed = in_h * in_w * in_c_by_word * nbits_in_data;
 
 static const unsigned k_h = 1;
-static const unsigned k_w = 3;
+static const unsigned k_w = 4;
 static const unsigned k_c = in_c;
 static const unsigned k_n = num_pe * 2;
 static const unsigned k_c_by_word = k_c / nbits_per_word;

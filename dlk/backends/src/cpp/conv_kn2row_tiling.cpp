@@ -15,6 +15,9 @@ void conv_kn2row_tiling_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_o
                              const unsigned pad_w, const unsigned pad_h, const unsigned stride)
 {
   /// just alias for better understanding
+
+   std::cout << "k_h: " << k_h << std::endl;
+           
   static const unsigned out_c_low = p::num_pe;
   assert((out_c % out_c_low) == 0);
   assert(in_c <= p::max_in_c);
@@ -35,6 +38,8 @@ void conv_kn2row_tiling_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_o
           /// doesn't exist in actuall memory.
           int ih = (ih_low + ih_high - pad_h);
           int iw = (iw_low + iw_high - pad_w);
+          // int ih = (ih_low + ih_high );
+          // int iw = (iw_low + iw_high );          
           bool input_on = (ih >= 0) && (iw >= 0) && (ih < in_h) && (iw < in_w);
 
           for (int ic = 0; ic < in_c; ic++) {
@@ -87,8 +92,8 @@ void conv_kn2row_tiling_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_o
 
             for (int ih = 0; ih < p::in_tile_h; ++ih) {
               for (int iw = 0; iw < p::in_tile_w; ++iw) {
-                int oh = ih - kh;
-                int ow = iw - kw;
+                int oh = ih - kh ;//+ pad_h;
+                int ow = iw - kw ;//+ pad_w;
                 // int oh = ih;
                 // int ow = iw;
 
@@ -102,8 +107,12 @@ void conv_kn2row_tiling_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_o
                     T_out acc_tmp = in_elem * k_elem;
 
                     if (output_on) {
-                      std::cout << " in_elem: " << in_elem << std::endl;
+
                       out_buf[oh][ow][oc] += acc_tmp;
+                    } else {
+                      std::cout << " acc_tmp: " << acc_tmp << std::endl;
+                      
+                      std::cout << " in_elem: " << in_elem << std::endl;
                     }
                   }
                 }
@@ -120,6 +129,7 @@ void conv_kn2row_tiling_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_o
               T_out tmp;
 
               if (threshold_data != NULL) {
+                std::cout << "threshold" << std::endl;
                 T_out ts0 = threshold_buf[oc][0];
                 T_out ts1 = threshold_buf[oc][1];
                 T_out ts2 = threshold_buf[oc][2];

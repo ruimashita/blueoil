@@ -99,7 +99,7 @@ void conv_kn2row_tiling(T_in in_data[], T_out out_data[], T_k k_data[], T_out th
   /* assert(((KH == 3) && (pad == 1)) || ((KH == 1) && (pad == 0))); */
   assert(stride == 1);
 
-  cpp::conv_kn2row_tiling_impl(in_data, out_data, k_data, threshold_data, in_w, in_h, in_c, out_w, out_h, out_c, KW, KW,
+  cpp::conv_kn2row_tiling_impl(in_data, out_data, k_data, threshold_data, in_w, in_h, in_c, out_w, out_h, out_c, KW, KH,
                                pad_w, pad_h, stride);
 }
 
