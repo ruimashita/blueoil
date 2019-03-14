@@ -71,8 +71,11 @@ bool test_conv(input_type &in_type, Conv_params_t &p)
             << "-------------------------------------------" << std::endl;
 
   if (in_type == SEQUENTIAL) {
-    for (int i = 0; i < p.in_size; i++) { in_data[i] = (i % 4); }
-    for (int i = 0; i < p.k_size * p.k_n; i++) { k_data[i] = (i % 2 == 0) ? 1 : -1; }
+    // for (int i = 0; i < p.in_size; i++) { in_data[i] = 0; }
+    for (int i = 0; i < p.in_size; i++) { in_data[i] = (i % 8) + 4; }
+
+    // for (int i = 0; i < p.k_size * p.k_n; i++) { k_data[i] = (i % 2 == 0) ? 1 : -1; }
+    for (int i = 0; i < p.k_size * p.k_n; i++) { k_data[i] = - (i % 8); }
   } else if (in_type == RANDOM) {
     for (int i = 0; i < p.in_size; i++) { in_data[i] = gen_random_value<T_in>(4, 1, 0); }
     for (int i = 0; i < p.k_size * p.k_n; i++) { k_data[i] = gen_random_value<T_k>(2, 2, 1); }
@@ -105,10 +108,12 @@ bool test_conv(input_type &in_type, Conv_params_t &p)
                                   p.in_w, p.in_h, p.in_c, p.out_w, p.out_h, p.out_c, p.pad_w, p.pad_h, p.stride_w);
   comp_packed = compare_output(out_data_conv_kn2row_tiling, out_data, "conv_kn2row_tiling", p.out_h, p.out_w, p.out_c);
 
-  pack_input_channel_wise(in_data, in_data_qconv_kn2row_tiling, p.in_h, p.in_w, p.in_c, p.nbits_in_data);
-  pack_kernel_channel_wise(k_data, k_data_quantized, p.k_h, p.k_w, p.k_c, p.k_n);
-  kernel_transform_NHWC_to_NoHWCNi(k_data_quantized, k_data_qconv_kn2row_tiling, p.k_n, p.k_h, p.k_w, p.k_c_by_word,
-                                   p.num_pe);
+
+  // 
+  /* pack_input_channel_wise(in_data, in_data_qconv_kn2row_tiling, p.in_h, p.in_w, p.in_c, p.nbits_in_data); */
+  /* pack_kernel_channel_wise(k_data, k_data_quantized, p.k_h, p.k_w, p.k_c, p.k_n); */
+  /* kernel_transform_NHWC_to_NoHWCNi(k_data_quantized, k_data_qconv_kn2row_tiling, p.k_n, p.k_h, p.k_w, p.k_c_by_word, */
+  /*                                  p.num_pe); */
 
 #if defined _INTEL_HLS_
 

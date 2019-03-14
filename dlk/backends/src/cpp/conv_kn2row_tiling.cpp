@@ -40,12 +40,15 @@ void conv_kn2row_tiling_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_o
           for (int ic = 0; ic < in_c; ic++) {
             int idx_in = ih * in_w * in_c + iw * in_c + ic;
             in_buf[ih_low][iw_low][ic] = (input_on) ? in_data[idx_in] : T_in(0);
+            if (input_on) {
+              // std::cout << "idx: " << idx_in << " in_buf: " << in_data[idx_in] << std::endl;
+            }
           }
         }
       }
 
       for (int oc_high = 0; oc_high < out_c; oc_high += out_c_low) {
-        T_out out_buf[p::tile_w][p::tile_w][out_c_low];
+        T_out out_buf[p::tile_h][p::tile_w][out_c_low];
         T_k k_buf[p::max_in_c][out_c_low];
         T_out threshold_buf[out_c_low][p::num_thresholds];
 
@@ -77,6 +80,8 @@ void conv_kn2row_tiling_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_o
                 int idx_k = (kh * k_w * in_c * out_c_low) + (kw * in_c * out_c_low) + (ic * out_c_low) + oc +
                             (oc_high * k_h * k_w * in_c);
                 k_buf[ic][oc] = k_data[idx_k];
+
+                // std::cout << "idx: " << idx_k << " in_buf: " << k_data[idx_k] << std::endl;
               }
             }
 
@@ -84,6 +89,9 @@ void conv_kn2row_tiling_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_o
               for (int iw = 0; iw < p::in_tile_w; ++iw) {
                 int oh = ih - kh;
                 int ow = iw - kw;
+                // int oh = ih;
+                // int ow = iw;
+
                 bool output_on = (oh >= 0) && (ow >= 0) && (oh < p::tile_h) && (ow < p::tile_w);
 
                 for (int ic = 0; ic < in_c; ic++) {
@@ -94,6 +102,7 @@ void conv_kn2row_tiling_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_o
                     T_out acc_tmp = in_elem * k_elem;
 
                     if (output_on) {
+                      std::cout << " in_elem: " << in_elem << std::endl;
                       out_buf[oh][ow][oc] += acc_tmp;
                     }
                   }
