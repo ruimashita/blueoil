@@ -271,23 +271,23 @@ static const bool has_thresholds = true;
 
 namespace conv_kn2row_params {
 
-static const unsigned num_pe = conv_common_params::num_pe;
+  static const unsigned num_pe = 2; //conv_common_params::num_pe;
 static const unsigned num_thresholds = conv_common_params::num_thresholds;
 
-static const unsigned max_in_c = conv_common_params::max_in_c;
+static const unsigned max_in_c = 2; // conv_common_params::max_in_c;
 static const unsigned max_in_c_by_word = conv_common_params::max_in_c_by_word;
 static const unsigned min_in_c = conv_common_params::min_in_c;
 static const unsigned min_in_c_by_word = conv_common_params::min_in_c_by_word;
 static const unsigned max_in_b = conv_common_params::max_in_b;
 static const unsigned min_in_b = conv_common_params::min_in_b;
 
-static const unsigned max_k_h = 3;
-static const unsigned max_k_w = 3;
+static const unsigned max_k_h = 1;
+static const unsigned max_k_w = 4;
 static const unsigned min_k_h = 1;
 static const unsigned min_k_w = 1;
 
-static const unsigned tile_h = 1;
-static const unsigned tile_w = 1;
+static const unsigned tile_h = 4;
+static const unsigned tile_w = 4;
 
 static const unsigned in_tile_h = tile_h + (max_k_h - 1) * 2;
 static const unsigned in_tile_w = tile_w + (max_k_w - 1) * 2;
@@ -297,13 +297,13 @@ static const unsigned in_tile_w = tile_w + (max_k_w - 1) * 2;
 
 
 namespace conv1x3_params {
-static const unsigned num_pe = conv_common_params::num_pe;
+static const unsigned num_pe = 2;//conv_common_params::num_pe;
 static const unsigned nbits_per_word = conv3x3_params::nbits_per_word;
 static const unsigned nbits_in_data = conv3x3_params::nbits_in_data;
 static const unsigned nbits_k_data = conv3x3_params::nbits_k_data;
 static const unsigned num_thresholds = conv_common_params::num_thresholds;
 
-static const unsigned pad_w = 1;
+static const unsigned pad_w = 2;
 static const unsigned pad_h = 0;
 static const unsigned stride_w = 1;
 static const unsigned stride_h = 1;
@@ -312,7 +312,7 @@ static const unsigned max_in_w = 64;
 static const unsigned max_in_h = 64;
 static const unsigned max_in_w_with_pad = max_in_w + (2 * pad_w);
 static const unsigned max_in_h_with_pad = max_in_h + (2 * pad_h);
-static const unsigned max_in_c = conv_common_params::max_in_c;
+static const unsigned max_in_c = 2; // conv_common_params::max_in_c;
 static const unsigned max_in_c_by_word = conv_common_params::max_in_c_by_word;
 static const unsigned min_in_c = conv_common_params::min_in_c;
 static const unsigned min_in_c_by_word = conv_common_params::min_in_c_by_word;
@@ -333,9 +333,9 @@ static const unsigned in_size = in_h * in_w * in_c;
 static const unsigned in_size_packed = in_h * in_w * in_c_by_word * nbits_in_data;
 
 static const unsigned k_h = 1;
-static const unsigned k_w = 4;
+static const unsigned k_w = 3;
 static const unsigned k_c = in_c;
-static const unsigned k_n = num_pe * 2;
+static const unsigned k_n = 4; //num_pe * 2;
 static const unsigned k_c_by_word = k_c / nbits_per_word;
 static const unsigned k_size = k_h * k_w * k_c;
 

@@ -16,7 +16,7 @@ void conv_kn2row_tiling_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_o
 {
   /// just alias for better understanding
 
-   std::cout << "k_h: " << k_h << std::endl;
+   std::cout << "k_h: " << k_h << "k_w: " << k_w << std::endl;
            
   static const unsigned out_c_low = p::num_pe;
   assert((out_c % out_c_low) == 0);
@@ -51,6 +51,14 @@ void conv_kn2row_tiling_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_o
           }
         }
       }
+      // std::cout << "wt: " << iw_high << std::endl;
+      // for (const auto& a : in_buf) {
+      //      for (const auto& b : a) {
+      //           for (const auto& c : b) {
+      //             std::cout << c << std::endl;
+      //           }
+      //      }
+      // }
 
       for (int oc_high = 0; oc_high < out_c; oc_high += out_c_low) {
         T_out out_buf[p::tile_h][p::tile_w][out_c_low];
@@ -90,6 +98,14 @@ void conv_kn2row_tiling_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_o
               }
             }
 
+            std::cout << "wt:" << iw_high << ", o_c_t:" << oc_high << ", kh:" << kh << ", kw:" << kw << std::endl;
+            for (const auto& a : k_buf) {
+              for (const auto& b : a) {
+                std::cout << b << std::endl;
+              }
+            }
+
+
             for (int ih = 0; ih < p::in_tile_h; ++ih) {
               for (int iw = 0; iw < p::in_tile_w; ++iw) {
                 int oh = ih - kh ;//+ pad_h;
@@ -110,9 +126,9 @@ void conv_kn2row_tiling_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_o
 
                       out_buf[oh][ow][oc] += acc_tmp;
                     } else {
-                      std::cout << " acc_tmp: " << acc_tmp << std::endl;
+                      // std::cout << " acc_tmp: " << acc_tmp << std::endl;
                       
-                      std::cout << " in_elem: " << in_elem << std::endl;
+                      // std::cout << " in_elem: " << in_elem << std::endl;
                     }
                   }
                 }
@@ -120,6 +136,15 @@ void conv_kn2row_tiling_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_o
             }
           }
         }
+        std::cout << "ht:" << ih_high << "wt:" << iw_high << ", o_c_t:" << oc_high << std::endl;
+        for (const auto& a : out_buf) {
+          for (const auto& b : a) {
+            for (const auto& c : b) {
+              std::cout << c << std::endl;
+            }
+          }
+        }
+
 
         /// export data in output buffer step
         for (int oh = 0; oh < p::tile_h; ++oh) {
