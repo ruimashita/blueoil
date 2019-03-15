@@ -34,15 +34,16 @@ hls_avalon_slave_component void intel_hls_qconv_kn2row_tiling_impl(
   hls_avalon_slave_register_argument int32 in_c_by_word, hls_avalon_slave_register_argument int32 out_w,
   hls_avalon_slave_register_argument int32 out_h, hls_avalon_slave_register_argument int32 out_c,
   hls_avalon_slave_register_argument int32 k_w, hls_avalon_slave_register_argument int32 k_h,
-  hls_avalon_slave_register_argument int32 pad, hls_avalon_slave_register_argument int32 use_threshold);
+  hls_avalon_slave_register_argument int32 pad_w, hls_avalon_slave_register_argument int32 pad_h,
+  hls_avalon_slave_register_argument int32 use_threshold);
 
 void intel_hls_qconv_kn2row_tiling(T_q in_data_packed[], T_out out_data[], T_q k_data_packed[], T_out th_data[],
                                    unsigned in_w, unsigned in_h, unsigned in_c_by_word, unsigned nbits_in_data,
                                    unsigned out_w, unsigned out_h, unsigned out_c, unsigned k_w, unsigned k_h,
-                                   unsigned pad, unsigned stride)
+                                   unsigned pad_w, unsigned pad_h, unsigned stride)
 {
-  assert(((k_h == 3) && (k_w == 3)) || ((k_h == 1) && (k_w == 1)));
-  assert(((k_h == 3) && (pad == 1)) || ((k_h == 1) && (pad == 0)));
+  /* assert(((k_h == 3) && (k_w == 3)) || ((k_h == 1) && (k_w == 1))); */
+  /* assert(((k_h == 3) && (pad == 1)) || ((k_h == 1) && (pad == 0))); */
   assert(stride == 1);
 
   const unsigned in_size = in_h * in_w * in_c_by_word * nbits_in_data;
@@ -68,5 +69,5 @@ void intel_hls_qconv_kn2row_tiling(T_q in_data_packed[], T_out out_data[], T_q k
     avmm_th(th_data, out_c * num_th * sizeof(T_out_hls));
 
   intel_hls_qconv_kn2row_tiling_impl(avmm_in, avmm_out, avmm_k, avmm_th, in_w, in_h, in_c_by_word, out_w, out_h, out_c,
-                                     k_h, k_w, pad, use_threshold);
+                                     k_h, k_w, pad_w, pad_h, use_threshold);
 }

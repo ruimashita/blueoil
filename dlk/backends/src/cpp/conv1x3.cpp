@@ -39,11 +39,6 @@ void conv1x3_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_out threshol
     }
   }
 
-  for(int i = 0; i < in_h * in_w * in_c; i++){
-    std::cout << " idx: " << i << " in_buf: " << in_data[i] << std::endl;
-  }
-
-  
   std::cout << "conv1x3_impl" << std::endl;
   unsigned idx_out = 0;
 
@@ -58,8 +53,6 @@ void conv1x3_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_out threshol
           int iw = (ow * stride) - pad_w + kw;
           bool valid =  (iw >= 0) && (iw < int(in_w)) && (ih >= 0) && (ih < int(in_h));
 
-          // bool valid = true;
-          std::cout << "valid: " << valid << std::endl;
           for (unsigned kc = 0; kc < p::in_c; kc++) {
             if (valid) {
               int idx_in = ih * in_w * in_c + iw * in_c + kc;

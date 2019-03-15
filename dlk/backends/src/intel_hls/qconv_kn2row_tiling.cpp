@@ -26,7 +26,7 @@ void input_load_module(ihc::mm_master<T_in_hls, ihc::aspace<1>, ihc::awidth<32>,
                                       ihc::maxburst<32>, ihc::align<16>, ihc::waitrequest<true> > &in_data,
                        T_in_hls in_buf[p::in_tile_h][p::in_tile_w][p::max_in_c_by_word][p::max_in_b],
                        const unsigned in_h, const unsigned in_w, const unsigned in_c, const unsigned ih_high,
-                       const unsigned iw_high, const unsigned pad)
+                       const unsigned iw_high, const unsigned pad_w, const unsigned pad_h)
 {
 #pragma loop_coalesce 4
 #pragma unroll 1
@@ -39,8 +39,8 @@ void input_load_module(ihc::mm_master<T_in_hls, ihc::aspace<1>, ihc::awidth<32>,
         for (unsigned ib = 0; ib < p::max_in_b; ib++) {
           /// index must care the padding, so we skip the padding part that
           /// doesn't exist in actual memory.
-          const int ih = int(ih_low + ih_high - pad);
-          const int iw = int(iw_low + iw_high - pad);
+          const int ih = int(ih_low + ih_high - pad_h);
+          const int iw = int(iw_low + iw_high - pad_w);
           const bool input_on = (ih >= 0) && (iw >= 0) && (ih < in_h) && (iw < in_w);
           // loading inputs from bus.
           // if the coordinates on the padding, this stores 0 instead of loading the data.
@@ -231,7 +231,8 @@ hls_avalon_slave_component void intel_hls_qconv_kn2row_tiling_impl(
   hls_avalon_slave_register_argument int32 in_c_by_word, hls_avalon_slave_register_argument int32 out_w,
   hls_avalon_slave_register_argument int32 out_h, hls_avalon_slave_register_argument int32 out_c,
   hls_avalon_slave_register_argument int32 k_w, hls_avalon_slave_register_argument int32 k_h,
-  hls_avalon_slave_register_argument int32 pad, hls_avalon_slave_register_argument int32 use_threshold)
+  hls_avalon_slave_register_argument int32 pad_w, hls_avalon_slave_register_argument int32 pad_h,
+  hls_avalon_slave_register_argument int32 use_threshold)
 {
   // in_buf shoule be banked by 8 elems, because this has 2 bits per an element, and
   // 4 inputs (128bits) are computed along with input channel dimension at a cycle.
@@ -255,10 +256,10 @@ hls_avalon_slave_component void intel_hls_qconv_kn2row_tiling_impl(
 
 #pragma loop_coalesce 2
 #pragma unroll 1
-  for (unsigned ih_high = 0; ih_high < in_h + 2 * pad; ih_high += p::tile_h) {
+  for (unsigned ih_high = 0; ih_high < in_h + 2 * pad_h; ih_high += p::tile_h) {
 #pragma unroll 1
-    for (unsigned iw_high = 0; iw_high < in_w + 2 * pad; iw_high += p::tile_w) {
-      input_load_module(in_data, in_buf, in_h, in_w, in_c_by_word, ih_high, iw_high, pad);
+    for (unsigned iw_high = 0; iw_high < in_w + 2 * pad_w; iw_high += p::tile_w) {
+      input_load_module(in_data, in_buf, in_h, in_w, in_c_by_word, ih_high, iw_high, pad_h, pad_w);
 
 #pragma unroll 1
       for (unsigned oc_high = 0; oc_high < out_c; oc_high += out_c_low) {

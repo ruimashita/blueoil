@@ -16,8 +16,6 @@ void conv_kn2row_tiling_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_o
 {
   /// just alias for better understanding
 
-   std::cout << "k_h: " << k_h << "k_w: " << k_w << std::endl;
-           
   static const unsigned out_c_low = p::num_pe;
   assert((out_c % out_c_low) == 0);
   assert(in_c <= p::max_in_c);
@@ -38,27 +36,14 @@ void conv_kn2row_tiling_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_o
           /// doesn't exist in actuall memory.
           int ih = (ih_low + ih_high - pad_h);
           int iw = (iw_low + iw_high - pad_w);
-          // int ih = (ih_low + ih_high );
-          // int iw = (iw_low + iw_high );          
           bool input_on = (ih >= 0) && (iw >= 0) && (ih < in_h) && (iw < in_w);
 
           for (int ic = 0; ic < in_c; ic++) {
             int idx_in = ih * in_w * in_c + iw * in_c + ic;
             in_buf[ih_low][iw_low][ic] = (input_on) ? in_data[idx_in] : T_in(0);
-            if (input_on) {
-              // std::cout << "idx: " << idx_in << " in_buf: " << in_data[idx_in] << std::endl;
-            }
           }
         }
       }
-      // std::cout << "wt: " << iw_high << std::endl;
-      // for (const auto& a : in_buf) {
-      //      for (const auto& b : a) {
-      //           for (const auto& c : b) {
-      //             std::cout << c << std::endl;
-      //           }
-      //      }
-      // }
 
       for (int oc_high = 0; oc_high < out_c; oc_high += out_c_low) {
         T_out out_buf[p::tile_h][p::tile_w][out_c_low];
@@ -94,24 +79,13 @@ void conv_kn2row_tiling_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_o
                             (oc_high * k_h * k_w * in_c);
                 k_buf[ic][oc] = k_data[idx_k];
 
-                // std::cout << "idx: " << idx_k << " in_buf: " << k_data[idx_k] << std::endl;
               }
             }
-
-            std::cout << "wt:" << iw_high << ", o_c_t:" << oc_high << ", kh:" << kh << ", kw:" << kw << std::endl;
-            for (const auto& a : k_buf) {
-              for (const auto& b : a) {
-                std::cout << b << std::endl;
-              }
-            }
-
 
             for (int ih = 0; ih < p::in_tile_h; ++ih) {
               for (int iw = 0; iw < p::in_tile_w; ++iw) {
-                int oh = ih - kh ;//+ pad_h;
-                int ow = iw - kw ;//+ pad_w;
-                // int oh = ih;
-                // int ow = iw;
+                int oh = ih - kh ;
+                int ow = iw - kw ;
 
                 bool output_on = (oh >= 0) && (ow >= 0) && (oh < p::tile_h) && (ow < p::tile_w);
 
@@ -125,10 +99,6 @@ void conv_kn2row_tiling_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_o
                     if (output_on) {
 
                       out_buf[oh][ow][oc] += acc_tmp;
-                    } else {
-                      // std::cout << " acc_tmp: " << acc_tmp << std::endl;
-                      
-                      // std::cout << " in_elem: " << in_elem << std::endl;
                     }
                   }
                 }
@@ -136,15 +106,6 @@ void conv_kn2row_tiling_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_o
             }
           }
         }
-        std::cout << "ht:" << ih_high << "wt:" << iw_high << ", o_c_t:" << oc_high << std::endl;
-        for (const auto& a : out_buf) {
-          for (const auto& b : a) {
-            for (const auto& c : b) {
-              std::cout << c << std::endl;
-            }
-          }
-        }
-
 
         /// export data in output buffer step
         for (int oh = 0; oh < p::tile_h; ++oh) {
@@ -154,7 +115,6 @@ void conv_kn2row_tiling_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_o
               T_out tmp;
 
               if (threshold_data != NULL) {
-                std::cout << "threshold" << std::endl;
                 T_out ts0 = threshold_buf[oc][0];
                 T_out ts1 = threshold_buf[oc][1];
                 T_out ts2 = threshold_buf[oc][2];
