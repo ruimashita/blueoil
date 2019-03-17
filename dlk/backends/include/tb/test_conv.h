@@ -38,6 +38,7 @@ bool test_conv(input_type &in_type, Conv_params_t &p)
 
   T_out *out_data = new T_out[p.out_size];
   T_out *out_data_conv_kn2row_tiling = new T_out[p.out_size];
+  T_out *out_data_qconv_kn2row_tiling = new T_out[p.out_size];
   T_out *out_data_hls_qconv_kn2row_tiling = new T_out[p.out_size];
   T_out *out_data_fpga_qconv_kn2row_tiling = new T_out[p.out_size];
 
@@ -106,14 +107,32 @@ bool test_conv(input_type &in_type, Conv_params_t &p)
 
   kernel_transform_NHWC_to_NoHWCNi(k_data, k_data_conv_kn2row_tiling, p.k_n, KH, KW, p.k_c, p.num_pe);
   cpp::conv_kn2row_tiling<KH, KW>(in_data, out_data_conv_kn2row_tiling, k_data_conv_kn2row_tiling, threshold_data,
-                                  p.in_w, p.in_h, p.in_c, p.out_w, p.out_h, p.out_c, p.pad_w, p.pad_h, p.stride_w);
+                                  p.in_w, p.in_h, p.in_c,
+                                  p.out_w, p.out_h, p.out_c,
+                                  p.pad_w, p.pad_h, p.stride_w);
   comp_packed = compare_output(out_data_conv_kn2row_tiling, out_data, "conv_kn2row_tiling", p.out_h, p.out_w, p.out_c);
 
 
   pack_input_channel_wise(in_data, in_data_qconv_kn2row_tiling, p.in_h, p.in_w, p.in_c, p.nbits_in_data);
-  pack_kernel_channel_wise(k_data, k_data_quantized, p.k_h, p.k_w, p.k_c, p.k_n);
-  kernel_transform_NHWC_to_NoHWCNi(k_data_quantized, k_data_qconv_kn2row_tiling, p.k_n, p.k_h, p.k_w, p.k_c_by_word,
-                                   p.num_pe);
+  pack_kernel_channel_wise(k_data, k_data_quantized, KH, KW, p.k_c, p.k_n);
+  kernel_transform_NHWC_to_NoHWCNi(k_data_quantized, k_data_qconv_kn2row_tiling, p.k_n, KH, KW, p.k_c_by_word, p.num_pe);
+
+  cpp::qconv<KH, KW>(in_data_qconv_kn2row_tiling, out_data_qconv_kn2row_tiling,
+                     k_data_qconv_kn2row_tiling, threshold_data,
+                     p.in_w, p.in_h,
+                     p.in_c_by_word, p.nbits_in_data,
+                     p.out_w, p.out_h, p.out_c,
+                     p.pad_w, p.pad_h, p.stride_w);
+
+  cpp::qconv_kn2row_tiling<KH, KW>(in_data_qconv_kn2row_tiling, out_data_qconv_kn2row_tiling,
+                                   k_data_qconv_kn2row_tiling, threshold_data,
+                                   p.in_w, p.in_h,
+                                   p.in_c_by_word, p.nbits_in_data,
+                                   p.out_w, p.out_h, p.out_c,
+                                   p.pad_w, p.pad_h, p.stride_w);
+
+  comp_packed = compare_output(out_data_qconv_kn2row_tiling, out_data, "qconv_kn2row_tiling", p.out_h, p.out_w, p.out_c);
+
 
 #if defined _INTEL_HLS_
 

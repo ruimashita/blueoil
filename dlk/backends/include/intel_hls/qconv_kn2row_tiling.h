@@ -69,5 +69,5 @@ void intel_hls_qconv_kn2row_tiling(T_q in_data_packed[], T_out out_data[], T_q k
     avmm_th(th_data, out_c * num_th * sizeof(T_out_hls));
 
   intel_hls_qconv_kn2row_tiling_impl(avmm_in, avmm_out, avmm_k, avmm_th, in_w, in_h, in_c_by_word, out_w, out_h, out_c,
-                                     k_h, k_w, pad_w, pad_h, use_threshold);
+                                     k_w, k_h, pad_w, pad_h, use_threshold);
 }

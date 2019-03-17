@@ -20,8 +20,10 @@ limitations under the License.
 namespace cpp {
 namespace p = conv1x3_params;
 
-void conv1x3_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_out threshold_data[], unsigned in_w, unsigned in_h,
-                  unsigned in_c, unsigned out_w, unsigned out_h, unsigned out_c, unsigned pad_w, unsigned pad_h, unsigned stride)
+void conv1x3_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_out threshold_data[],
+                  unsigned in_w, unsigned in_h, unsigned in_c,
+                  unsigned out_w, unsigned out_h, unsigned out_c,
+                  unsigned pad_w, unsigned pad_h, unsigned stride)
 {
   T_k* k_local = new T_k[p::k_size * p::k_n];
   T_out threshold_local[p::out_c][p::num_thresholds];
@@ -115,10 +117,51 @@ void conv1x3_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_out threshol
   delete[] k_local;
 }
 
-void qconv1x3_impl(T_q in_data[], T_out out_data[], T_q k_data[], T_out threshold_data, unsigned in_w, unsigned in_h,
-                   unsigned in_c_by_word, unsigned out_w, unsigned out_h, unsigned out_c, unsigned pad, unsigned stride)
+void qconv1x3_impl(T_q in_data[], T_out out_data[], T_q k_data[], T_out threshold_data,
+                   unsigned in_w, unsigned in_h, unsigned in_c_by_word, unsigned nbits_in_data,
+                   unsigned out_w, unsigned out_h, unsigned out_c,
+                   unsigned pad_w, unsigned pad_h, unsigned stride)
 {
   unsigned idx_k = 0;
+  unsigned idx_t = 0;
+
+  T_q* k_local = new T_q[p::k_size_packed * out_c];
+  T_out threshold_local[out_c][p::num_thresholds];
+
+  for (unsigned kn = 0; kn < out_c; kn++) {
+    for (unsigned k = 0; k < p::k_size_packed; ++k) { k_local[k * out_c + kn] = k_data[idx_k++]; }
+  }
+
+  if (threshold_data != NULL) {
+    for (unsigned oc = 0; oc < p::out_c; oc++) {
+      for (unsigned i = 0; i < p::num_thresholds; i++) { threshold_local[oc][i] = threshold_data[idx_t++]; }
+    }
+  }
+
+  for (unsigned oh = 0; oh < out_h; ++oh)
+    for (unsigned ow = 0; ow < out_w; ++ow) {
+      unsigned idx_k_local = 0;
+
+      for (unsigned kh = 0; kh < p::k_h; kh++) {
+        for (unsigned kw = 0; kw < p::k_w; kw++) {
+          int ih = (oh * stride) - pad_h + kh;
+          int iw = (ow * stride) - pad_w + kw;
+          bool valid =  (iw >= 0) && (iw < int(in_w)) && (ih >= 0) && (ih < int(in_h));
+
+          for (unsigned kc = 0; kc < p::in_c; kc++) {
+            if (valid) {
+              int idx_in = ih * in_w * in_c + iw * in_c + kc;
+              T_in in_buf = in_data[idx_in];
+
+              for (int kn = 0; kn < out_c; kn++) {
+                T_k k_buf = k_local[idx_k_local * p::k_n + kn];
+                // std::cout << "kn: " << kn << " in_buf: " << in_buf << " k_buf: " << k_buf << std::endl;
+                out[kn] += in_buf * k_buf;
+              }
+            } 
+            idx_k_local++;
+          }
+        }
 
   for (int oc_out = 0; oc_out < out_c; oc_out += p::num_pe) {
     T_q* k_local = new T_q[p::k_size_packed * p::num_pe];

@@ -278,7 +278,7 @@ static const unsigned nbits_in_data = conv3x3_params::nbits_in_data;
 static const unsigned nbits_k_data = conv3x3_params::nbits_k_data;
 static const unsigned num_thresholds = conv_common_params::num_thresholds;
 
-static const unsigned pad_w = 1;
+static const unsigned pad_w = 0;
 static const unsigned pad_h = 0;
 static const unsigned stride_w = 1;
 static const unsigned stride_h = 1;
@@ -328,7 +328,7 @@ static const unsigned k_size_packed = k_h * k_w * k_c_by_word * nbits_k_data;
 static const unsigned inb_h = k_h + 1;
 static const unsigned inb_w = k_w + 1;
 static const unsigned num_in_line = (max_in_w_with_pad * (k_h - 1)) + k_w;
-static const bool has_thresholds = true;
+static const bool has_thresholds = false;
 } // namespace conv1x3_params
 
 
