@@ -73,17 +73,18 @@ bool test_conv(input_type &in_type, Conv_params_t &p)
 
   if (in_type == SEQUENTIAL) {
     // for (int i = 0; i < p.in_size; i++) { in_data[i] = 0; }
-    for (int i = 0; i < p.in_size; i++) { in_data[i] = (i % 8) + 4; }
+    for (int i = 0; i < p.in_size; i++) { in_data[i] = (i % 4); }
 
-    // for (int i = 0; i < p.k_size * p.k_n; i++) { k_data[i] = (i % 2 == 0) ? 1 : -1; }
+    for (int i = 0; i < p.k_size * p.k_n; i++) { k_data[i] = (i % 2 == 0) ? 1 : -1; }
     // for (int i = 0; i < p.k_size * p.k_n; i++) { k_data[i] = (i % 2 == 0) ? 10 : -111; }
-    for (int i = 0; i < p.k_size * p.k_n; i++) { k_data[i] = -((i % 8)); }
+    // for (int i = 0; i < p.k_size * p.k_n; i++) { k_data[i] = -((i % 8)); }
   } else if (in_type == RANDOM) {
     for (int i = 0; i < p.in_size; i++) { in_data[i] = gen_random_value<T_in>(4, 1, 0); }
+    // for (int i = 0; i < p.k_size * p.k_n; i++) { k_data[i] = 1; }
     for (int i = 0; i < p.k_size * p.k_n; i++) { k_data[i] = gen_random_value<T_k>(2, 2, 1); }
   } else if (in_type == ALL_1) {
-    for (int i = 0; i < p.in_size; i++) { in_data[i] = 1; }
-    for (int i = 0; i < p.k_size * p.k_n; i++) { k_data[i] = 1; }
+    for (int i = 0; i < p.in_size; i++) { in_data[i] = 3; }
+    for (int i = 0; i < p.k_size * p.k_n; i++) { k_data[i] = -1; }
   }
 
   if (p.has_thresholds) {
@@ -117,12 +118,15 @@ bool test_conv(input_type &in_type, Conv_params_t &p)
   pack_kernel_channel_wise(k_data, k_data_quantized, KH, KW, p.k_c, p.k_n);
   kernel_transform_NHWC_to_NoHWCNi(k_data_quantized, k_data_qconv_kn2row_tiling, p.k_n, KH, KW, p.k_c_by_word, p.num_pe);
 
-  cpp::qconv<KH, KW>(in_data_qconv_kn2row_tiling, out_data_qconv_kn2row_tiling,
-                     k_data_qconv_kn2row_tiling, threshold_data,
-                     p.in_w, p.in_h,
-                     p.in_c_by_word, p.nbits_in_data,
-                     p.out_w, p.out_h, p.out_c,
-                     p.pad_w, p.pad_h, p.stride_w);
+  /* cpp::qconv<KH, KW>(in_data_qconv_kn2row_tiling, out_data_qconv_kn2row_tiling, */
+  /*                    k_data_qconv_kn2row_tiling, threshold_data, */
+  /*                    p.in_w, p.in_h, */
+  /*                    p.in_c_by_word, p.nbits_in_data, */
+  /*                    p.out_w, p.out_h, p.out_c, */
+  /*                    p.pad_w, p.pad_h, p.stride_w); */
+
+  /* compare_output(out_data_qconv_kn2row_tiling, out_data, "qconv", p.out_h, p.out_w, p.out_c); */
+
 
   cpp::qconv_kn2row_tiling<KH, KW>(in_data_qconv_kn2row_tiling, out_data_qconv_kn2row_tiling,
                                    k_data_qconv_kn2row_tiling, threshold_data,
@@ -130,10 +134,12 @@ bool test_conv(input_type &in_type, Conv_params_t &p)
                                    p.in_c_by_word, p.nbits_in_data,
                                    p.out_w, p.out_h, p.out_c,
                                    p.pad_w, p.pad_h, p.stride_w);
+  std::cout << "bbb-------------------------------------------" << std::endl;
+  
+  compare_output(out_data_qconv_kn2row_tiling, out_data, "qconv_kn2row_tiling", p.out_h, p.out_w, p.out_c);
 
-  comp_packed = compare_output(out_data_qconv_kn2row_tiling, out_data, "qconv_kn2row_tiling", p.out_h, p.out_w, p.out_c);
-
-
+  std::cout << "aaa-------------------------------------------" << std::endl;
+  
 #if defined _INTEL_HLS_
 
   intel_hls_qconv_kn2row_tiling(in_data_qconv_kn2row_tiling, out_data_hls_qconv_kn2row_tiling,

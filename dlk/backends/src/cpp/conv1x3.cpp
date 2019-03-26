@@ -117,7 +117,7 @@ void conv1x3_impl(T_in in_data[], T_out out_data[], T_k k_data[], T_out threshol
   delete[] k_local;
 }
 
-void qconv1x3_impl(T_q in_data[], T_out out_data[], T_q k_data[], T_out threshold_data,
+void qconv1x3_impl(T_q in_data[], T_out out_data[], T_q k_data[], T_out threshold_data[],
                    unsigned in_w, unsigned in_h, unsigned in_c_by_word, unsigned nbits_in_data,
                    unsigned out_w, unsigned out_h, unsigned out_c,
                    unsigned pad_w, unsigned pad_h, unsigned stride)
@@ -128,19 +128,30 @@ void qconv1x3_impl(T_q in_data[], T_out out_data[], T_q k_data[], T_out threshol
   T_q* k_local = new T_q[p::k_size_packed * out_c];
   T_out threshold_local[out_c][p::num_thresholds];
 
+  std::cout << "size" << sizeof(k_data)/sizeof(k_data[0]) << std::endl;
+  std::cout << "size" << sizeof(k_local)/sizeof(k_local[0]) << std::endl;
   for (unsigned kn = 0; kn < out_c; kn++) {
-    for (unsigned k = 0; k < p::k_size_packed; ++k) { k_local[k * out_c + kn] = k_data[idx_k++]; }
-  }
+    for (unsigned k = 0; k < p::k_size_packed; ++k) {
 
-  if (threshold_data != NULL) {
-    for (unsigned oc = 0; oc < p::out_c; oc++) {
-      for (unsigned i = 0; i < p::num_thresholds; i++) { threshold_local[oc][i] = threshold_data[idx_t++]; }
+      k_local[k * out_c + kn] = k_data[idx_k++];
     }
   }
 
-  for (unsigned oh = 0; oh < out_h; ++oh)
+
+  if (threshold_data != NULL) {
+    for (unsigned oc = 0; oc < out_c; oc++) {
+      for (unsigned i = 0; i < p::num_thresholds; i++) {
+        threshold_local[oc][i] = threshold_data[idx_t++]; }
+    }
+  }
+
+  unsigned idx_out = 0;
+  for (unsigned oh = 0; oh < out_h; ++oh) {
     for (unsigned ow = 0; ow < out_w; ++ow) {
+      T_out out[p::k_n] = {};
+      for (int oc = 0; oc < out_c; oc++) { out[oc] = 0; }
       unsigned idx_k_local = 0;
+
 
       for (unsigned kh = 0; kh < p::k_h; kh++) {
         for (unsigned kw = 0; kw < p::k_w; kw++) {
@@ -148,61 +159,32 @@ void qconv1x3_impl(T_q in_data[], T_out out_data[], T_q k_data[], T_out threshol
           int iw = (ow * stride) - pad_w + kw;
           bool valid =  (iw >= 0) && (iw < int(in_w)) && (ih >= 0) && (ih < int(in_h));
 
-          for (unsigned kc = 0; kc < p::in_c; kc++) {
+          for (unsigned ic = 0; ic < in_c_by_word; ic++) {
             if (valid) {
-              int idx_in = ih * in_w * in_c + iw * in_c + kc;
-              T_in in_buf = in_data[idx_in];
+              int idx_in = (ih * in_w * in_c_by_word + iw * in_c_by_word + ic) * p::nbits_in_data;
+
+              T_q in_buf0 = in_data[idx_in];
+              T_q in_buf1 = in_data[idx_in + 1];
 
               for (int kn = 0; kn < out_c; kn++) {
-                T_k k_buf = k_local[idx_k_local * p::k_n + kn];
-                // std::cout << "kn: " << kn << " in_buf: " << in_buf << " k_buf: " << k_buf << std::endl;
-                out[kn] += in_buf * k_buf;
+                T_k k_buf = k_local[idx_k_local * out_c + kn];
+                out[kn] += PE(k_buf, in_buf0, in_buf1);
               }
             } 
             idx_k_local++;
           }
         }
+      }
 
-  for (int oc_out = 0; oc_out < out_c; oc_out += p::num_pe) {
-    T_q* k_local = new T_q[p::k_size_packed * p::num_pe];
-
-    for (unsigned kn = 0; kn < p::num_pe; ++kn) {
-      for (unsigned k = 0; k < p::k_size_packed; ++k) { k_local[k * p::num_pe + kn] = k_data[idx_k++]; }
+      for (int oc = 0; oc < out_c; oc++) {
+         out_data[idx_out++] = out[oc];
+      }
     }
-
-    unsigned idx_out = oc_out;
-
-    for (unsigned oh = 0; oh < out_h; ++oh)
-      for (unsigned ow = 0; ow < out_w; ++ow) {
-        T_out out[p::num_pe] = {};
-        unsigned idx_k_local = 0;
-
-        for (unsigned kh = 0; kh < p::k_h; ++kh)
-          for (unsigned kw = 0; kw < p::k_w; ++kw)
-            for (unsigned ic = 0; ic < in_c_by_word; ++ic) {
-              int ih = (oh * stride) - pad + kh;
-              int iw = (ow * stride) - pad + kw;
-              bool valid = (iw >= 0) && (iw < int(in_w)) && (ih >= 0) && (ih < int(in_h));
-
-              if (valid) {
-                int idx_in = (ih * in_w * in_c_by_word + iw * in_c_by_word + ic) * p::nbits_in_data;
-                T_q in_buf0 = in_data[idx_in];
-                T_q in_buf1 = in_data[idx_in + 1];
-
-                for (int kn = 0; kn < p::num_pe; kn++) {
-                  T_q k_buf = k_local[idx_k_local * p::num_pe + kn];
-                  out[kn] += PE(k_buf, in_buf0, in_buf1);
-                }
-              }
-              idx_k_local++; // should be executed, even while no corresponding input
-            }
-
-        for (int kn = 0; kn < p::num_pe; kn++) { out_data[idx_out + kn] = out[kn]; }
-        idx_out += out_c;
-      } // for LOOP_CONV_INPUT
-
-    delete[] k_local;
   }
+  std::cout << "kn: " << std::endl;
+
+  // delete[] k_local;
 }
+
 
 } // namespace cpp

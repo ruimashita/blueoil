@@ -133,12 +133,13 @@ bool compare_output(T out[], T expected[], const string name, unsigned out_h, un
                << "out_c: " << oc << "\n"
                << endl;
           cout << "expect: " << expected[idx] << ", " << name << ": " << out[idx] << endl;
-          cout << "index: " << idx << endl;          
+          cout << "index: " << idx << endl;
           return false;
         }
         idx++;
       }
 
+  cout << "[" << name << "] test success!!!" << endl;
   cout << "[" << name << "] test success!!!" << endl;
   return true;
 }
