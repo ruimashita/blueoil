@@ -92,29 +92,39 @@ def _measure_time(config, restore_path, step_size):
     overall_times = []
     only_network_times = []
 
-    for test_step in range(step_size):
-        index = test_step % len(image_files)
-        image_file = image_files[index]
-        raw_image = _load_image(image_file)
+    builder = tf.profiler.ProfileOptionBuilder
+    opts = builder(builder.time_and_memory()).order_by('micros').build()
+    with tf.contrib.tfprof.ProfileContext('tmp/train_dir',
+                                          trace_steps=[],
+                                          dump_steps=[]) as pctx:
 
-        start_overall = time.time()
+        for test_step in range(step_size):
+            index = test_step % len(image_files)
+            image_file = image_files[index]
+            raw_image = _load_image(image_file)
 
-        image = _pre_process(raw_image, config.PRE_PROCESSOR, config.DATA_FORMAT)
-        images = np.expand_dims(image, axis=0)
-        feed_dict = {
-            images_placeholder: images,
-        }
+            start_overall = time.time()
 
-        start_only_network = time.time()
-        output_np = sess.run(output, feed_dict=feed_dict)
-        only_network_times.append(time.time() - start_only_network)
+            image = _pre_process(raw_image, config.PRE_PROCESSOR, config.DATA_FORMAT)
+            images = np.expand_dims(image, axis=0)
+            feed_dict = {
+                images_placeholder: images,
+            }
 
-        if config.POST_PROCESSOR:
-            config.POST_PROCESSOR(**{"outputs": output_np})
+            start_only_network = time.time()
 
-        overall_times.append(time.time() - start_overall)
+            pctx.trace_next_step()
+            pctx.dump_next_step()
+            output_np = sess.run(output, feed_dict=feed_dict)
+            pctx.profiler.profile_operations(options=opts)
+            only_network_times.append(time.time() - start_only_network)
 
-    return overall_times, only_network_times
+            if config.POST_PROCESSOR:
+                config.POST_PROCESSOR(**{"outputs": output_np})
+
+            overall_times.append(time.time() - start_overall)
+
+        return overall_times, only_network_times
 
 
 def _run(config_file, experiment_id, restore_path, image_size, step_size, cpu):
