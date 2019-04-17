@@ -52,7 +52,7 @@ class LmnetV1(Base):
         if self.data_format != 'NHWC':
             inputs = tf.transpose(inputs, perm=[self.data_format.find(d) for d in 'NHWC'])
 
-        output = tf.space_to_depth(inputs, block_size=block_size, name=name)
+        output = tf.layers.max_pooling2d(inputs, pool_size=block_size, strides=1, name=name)
 
         if self.data_format != 'NHWC':
             output = tf.transpose(output, perm=['NHWC'.find(d) for d in self.data_format])
