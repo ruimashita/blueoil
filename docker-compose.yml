@@ -1,0 +1,38 @@
+version: '2.4'
+services:
+  wakisaka:
+    build:
+      context: ./
+      dockerfile: docker/Dockerfile
+      shm_size: '1gb'
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    working_dir: /home/blueoil
+    network_mode: "host"
+    runtime: nvidia
+    volumes:
+      - ${DATA_DIR:-/storage/dataset}:/storage/dataset
+
+      - ./lmnet/saved:/home/blueoil/saved
+
+      - ./config:/home/blueoil/config
+      - ./dataset:/home/blueoil/dataset
+      - ./result:/home/blueoil/result
+      - ./blueoil:/home/blueoil/blueoil
+      - ./lmnet:/home/blueoil/lmnet
+      - ./dlk/python:/home/blueoil/dlk/python
+
+      # In order to avoid override installed coco, Ignore to volume /home/lmnet/third_party/coco/PythonAPI
+      - /home/blueoil/lmnet/third_party/coco/PythonAPI
+
+      # for x11
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - ~/.Xauthority:/root/.Xauthority:rw
+    environment:
+      - DATA_DIR=/storage/dataset
+      - OUTPUT_DIR=/home/blueoil/saved
+      - PYTHONPATH=/home/blueoil:/home/blueoil/lmnet:/home/blueoil/dlk/python/dlk
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+      # for x11
+      - DISPLAY=$DISPLAY

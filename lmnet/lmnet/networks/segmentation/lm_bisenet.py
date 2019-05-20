@@ -333,7 +333,7 @@ class LMBiSeNet(Base):
 
             loss = loss_main + loss_context_1 + loss_context_2
 
-            weight_decay_loss = tf.losses.get_regularization_loss()
+            weight_decay_loss = self._weight_decay_loss()  # tf.losses.get_regularization_loss()
             loss = loss + weight_decay_loss
             tf.summary.scalar("weight_decay", weight_decay_loss)
 
