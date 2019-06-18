@@ -162,8 +162,8 @@ def start_training(config):
         #     )
         # )
         session_config = tf.ConfigProto()  # tf.ConfigProto(log_device_placement=True)
-    # TODO(wakisaka): XLA JIT
-    # session_config.graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1
+        # TODO(wakisaka): XLA JIT
+        # session_config.graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1
 
     sess = tf.Session(graph=graph, config=session_config)
     sess.run([init_op, reset_metrics_op])
