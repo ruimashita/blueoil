@@ -15,6 +15,7 @@
 # =============================================================================
 from functools import partial
 import tensorflow as tf
+import numpy as np
 
 from lmnet.blocks import darknet
 from lmnet.layers import conv2d
@@ -49,6 +50,18 @@ class LMFYolo(YoloV2):
 
         return train_op
 
+    def encode_image(self, images):
+        embedding_granularity = 256
+        embedding_dim = 10
+        embedding_initial_value = np.random.rand(embedding_granularity, embedding_dim).astype(np.float32)
+        embedding = tf.Variable(embedding_initial_value)
+
+        images = tf.cast(images*255, tf.int32)
+        images = tf.clip_by_value(images, 0, 255)
+        encoded = tf.contrib.layers.embedding_lookup_unique(embedding, images)
+        shape = encoded.get_shape()
+        return tf.reshape(encoded, (shape[0], shape[1], shape[2], -1))
+
     def base(self, images, is_training):
         """Base network.
         Returns: Output. output shape depends on parameter.
@@ -81,11 +94,14 @@ class LMFYolo(YoloV2):
         darknet_block = partial(darknet, is_training=is_training,
                                 activation=self.activation, data_format=self.data_format)
 
-        x = darknet_block("block_1", self.inputs, filters=32, kernel_size=1)
-        x = darknet_block("block_2", x, filters=8, kernel_size=3)
+        x = self.encode_image(self.inputs)
+        x = self.activation(x)
+
+        x = darknet_block("block_1", x, filters=32, kernel_size=3)
         x = self._reorg("pool_1", x, stride=2, data_format=self.data_format)
 
-        x = darknet_block("block_3", x, filters=16, kernel_size=3)
+        x = darknet_block("block_2", x, filters=32, kernel_size=3)
+        x = darknet_block("block_3", x, filters=32, kernel_size=3)
         x = self._reorg("pool_2", x, stride=2, data_format=self.data_format)
 
         x4 = darknet_block("block_4", x, filters=32, kernel_size=3)
