@@ -19,8 +19,6 @@ import threading
 import numpy as np
 import os
 import queue
-import tensorflow as tf
-from lmnet.datasets.tfds import TFDSBase
 from lmnet.datasets.base import SegmentationBase, ObjectDetectionBase
 
 
@@ -49,11 +47,11 @@ def _apply_augmentations(dataset, image, label):
     else:
         sample['label'] = label
 
-    if callable(augmentor) and dataset.subset == 'train':
-        sample = augmentor(**sample)
+    # if callable(augmentor) and dataset.subset == 'train':
+    #     sample = augmentor(**sample)
 
-    if callable(pre_processor):
-        sample = pre_processor(**sample)
+    # if callable(pre_processor):
+    #     sample = pre_processor(**sample)
 
     image = sample['image']
 
@@ -199,31 +197,6 @@ class _SimpleDatasetReader:
         return _concat_data(result)
 
 
-class _TFDSReader:
-
-    def __init__(self, dataset):
-        tf_dataset = dataset.tf_dataset.shuffle(1024) \
-                                       .repeat() \
-                                       .batch(dataset.batch_size) \
-                                       .prefetch(tf.data.experimental.AUTOTUNE)
-
-        iterator = tf.data.make_initializable_iterator(tf_dataset)
-
-        self.dataset = dataset
-        self.session = tf.Session()
-        self.session.run(iterator.initializer)
-        self.next_batch = iterator.get_next()
-
-    def read(self):
-        """Return batch size data."""
-        result = []
-        batch = self.session.run(self.next_batch)
-        for image, label in zip(batch['image'], batch['label']):
-            image, label = _apply_augmentations(self.dataset, image, label)
-            result.append((image, label))
-        return _concat_data(result)
-
-
 class DatasetIterator:
 
     available_subsets = ["train", "train_validation_saving", "validation"]
@@ -234,18 +207,14 @@ class DatasetIterator:
         self.enable_prefetch = enable_prefetch
         self.seed = seed
 
-        if issubclass(dataset.__class__, TFDSBase):
-            self.enable_prefetch = False
-            self.reader = _TFDSReader(self.dataset)
+        if self.enable_prefetch:
+            self.prefetch_result_queue = queue.Queue(maxsize=200)
+            self.prefetcher = _MultiProcessDatasetPrefetchThread(self.dataset, self.prefetch_result_queue, seed)
+            self.prefetcher.start()
+            print("ENABLE prefetch")
         else:
-            if self.enable_prefetch:
-                self.prefetch_result_queue = queue.Queue(maxsize=200)
-                self.prefetcher = _MultiProcessDatasetPrefetchThread(self.dataset, self.prefetch_result_queue, seed)
-                self.prefetcher.start()
-                print("ENABLE prefetch")
-            else:
-                self.reader = _SimpleDatasetReader(self.dataset, seed)
-                print("DISABLE prefetch")
+            self.reader = _SimpleDatasetReader(self.dataset, seed)
+            print("DISABLE prefetch")
 
     @property
     def num_per_epoch(self):
@@ -278,6 +247,15 @@ class DatasetIterator:
             (images, labels) = self.prefetch_result_queue.get()
         else:
             images, labels = self.reader.read()
+        train_tmp = [0] * len(images)
+        gt_tmp = [0] * len(labels)
+        for ind in range(len(images)):
+            train_tmp[ind] = np.load(images[ind])[0]
+            gt_tmp[ind] = np.load(labels[ind])[0]
+        images = train_tmp
+        labels = gt_tmp
+        # import pdb;pdb.set_trace()
+
         return images, labels
 
     def feed(self):

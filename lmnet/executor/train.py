@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*-
+# -*- coding: utf-8 
+from lmnet.networks.segmentation.base import SegnetBase
 # Copyright 2018 The Blueoil Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +20,6 @@ import math
 import click
 import tensorflow as tf
 from tensorflow.core.util.event_pb2 import SessionLog
-from tensorflow.keras.utils import Progbar
 
 from lmnet.utils import executor, module_loader, config as config_util
 from lmnet import environment
@@ -33,6 +33,7 @@ def _save_checkpoint(saver, sess, global_step, step):
         os.path.join(environment.CHECKPOINTS_DIR, checkpoint_file),
         global_step=global_step,
     )
+    print("Save ckpt. step: {}.".format(step + 1))
 
 
 def setup_dataset(config, subset, rank):
@@ -108,7 +109,7 @@ def start_training(config):
 
         output = model.inference(images_placeholder, is_training_placeholder)
         if ModelClass.__module__.startswith("lmnet.networks.object_detection"):
-            loss = model.loss(output, labels_placeholder, global_step)
+            loss = model.loss(output, labels_placeholder, is_training_placeholder)
         else:
             loss = model.loss(output, labels_placeholder)
         opt = model.optimizer(global_step)
@@ -211,10 +212,11 @@ def start_training(config):
         max_steps = int(train_dataset.num_per_epoch / config.BATCH_SIZE * config.MAX_EPOCHS)
     else:
         max_steps = config.MAX_STEPS
+    print("max_steps: {}".format(max_steps))
 
-    progbar = Progbar(max_steps)
-    progbar.update(last_step)
     for step in range(last_step, max_steps):
+        print("step", step)
+
         if config.IS_DISTRIBUTION:
             # scatter dataset
             if step % step_per_epoch == 0:
@@ -226,6 +228,49 @@ def start_training(config):
                 train_dataset.update_dataset(feed_indices)
 
         images, labels = train_dataset.feed()
+        for ind in range(2):
+            images[ind] = images[ind] * 255
+            labels[ind] = labels[ind] * 255
+###
+#         for ind in range(len(images)):
+#             in_fn = os.path.basename(images[ind])
+#             gt_fn = os.path.basename(labels[ind])
+#             in_exposure = float(in_fn[9:-5])
+#             gt_exposure = float(gt_fn[9:-5])
+#             ratio = min(gt_exposure / in_exposure, 300)
+# 
+#             input_images = images
+#             gt_imges = labels
+#             import pdb;pdb.set_trace()
+#             if input_images[str(ratio)[0:3]][ind] is None:
+#                 raw = rawpy.imread(in_path)
+#                 input_images[str(ratio)[0:3]][ind] = np.expand_dims(pack_raw(raw), axis=0) * ratio
+# 
+#                 gt_raw = rawpy.imread(gt_path)
+#                 im = gt_raw.postprocess(use_camera_wb=True, half_size=False, no_auto_bright=True, output_bps=16)
+#                 gt_images[ind] = np.expand_dims(np.float32(im / 65535.0), axis=0)
+# 
+#             # crop
+#             H = input_images[str(ratio)[0:3]][ind].shape[1]
+#             W = input_images[str(ratio)[0:3]][ind].shape[2]
+# 
+#             xx = np.random.randint(0, W - ps)
+#             yy = np.random.randint(0, H - ps)
+#             input_patch = input_images[str(ratio)[0:3]][ind][:, yy:yy + ps, xx:xx + ps, :]
+#             gt_patch = gt_images[ind][:, yy * 2:yy * 2 + ps * 2, xx * 2:xx * 2 + ps * 2, :]
+# 
+#             if np.random.randint(2, size=1)[0] == 1:  # random flip
+#                 input_patch = np.flip(input_patch, axis=1)
+#                 gt_patch = np.flip(gt_patch, axis=1)
+#             if np.random.randint(2, size=1)[0] == 1:
+#                 input_patch = np.flip(input_patch, axis=2)
+#                 gt_patch = np.flip(gt_patch, axis=2)
+#             if np.random.randint(2, size=1)[0] == 1:  # random transpose
+#                 input_patch = np.transpose(input_patch, (0, 2, 1, 3))
+#                 gt_patch = np.transpose(gt_patch, (0, 2, 1, 3))
+# 
+#             input_patch = np.minimum(input_patch, 1.0)
+###
 
         feed_dict = {
             is_training_placeholder: True,
@@ -321,8 +366,10 @@ def start_training(config):
             # init metrics values
             sess.run(reset_metrics_op)
             test_step_size = int(math.ceil(validation_dataset.num_per_epoch / config.BATCH_SIZE))
+            print("test_step_size", test_step_size)
 
             for test_step in range(test_step_size):
+                print("test_step", test_step)
 
                 images, labels = validation_dataset.feed()
                 feed_dict = {
@@ -348,9 +395,8 @@ def start_training(config):
             if rank == 0:
                 val_writer.add_summary(metrics_summary, step + 1)
 
-        progbar.update(step + 1)
     # training loop end.
-    print("Done")
+    print("reach max step")
 
 
 def run(network, dataset, config_file, experiment_id, recreate):

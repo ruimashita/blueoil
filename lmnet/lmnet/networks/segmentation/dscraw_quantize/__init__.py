@@ -13,8 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # =============================================================================
-from .lm_segnet_v1 import LmSegnetV1, LmSegnetV1Quantize  # NOQA
-from .dscraw import DSCRaw, DSCRawQuantize  # NOQA
+# this file exists for backward compatibility, to make it possible
+# to import by from `lmnet.networks.segmentation.lm_segnet_quantize import LmSegnet`
 
-LmSegnet = LmSegnetV1
-LmSegnetQuantize = LmSegnetV1Quantize
+from lmnet.networks.segmentation import DSCRawQuantize  # NOQA

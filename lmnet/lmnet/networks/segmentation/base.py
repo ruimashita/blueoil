@@ -43,15 +43,17 @@ class Base(BaseNetwork):
             self.label_colors = label_colors
 
     def placeholderes(self):
-        shape = (self.batch_size, self.image_size[0], self.image_size[1], 3) \
+        # shape = (self.batch_size, self.image_size[0], self.image_size[1], 3) \
+        shape = (self.batch_size, self.image_size[0], self.image_size[1], 4) \
             if self.data_format == 'NHWC' else (self.batch_size, 3, self.image_size[0], self.image_size[1])
+        print("shape:"+str(shape))
         images_placeholder = tf.placeholder(
             tf.float32,
             shape=shape,
             name="images_placeholder")
         labels_placeholder = tf.placeholder(
             tf.int32,
-            shape=(self.batch_size, self.image_size[0], self.image_size[1]),
+            shape=(self.batch_size, self.image_size[0] * 2, self.image_size[1] * 2,3),
             name="labels_placeholder")
 
         return images_placeholder, labels_placeholder
@@ -70,31 +72,44 @@ class Base(BaseNetwork):
                 image = tf.stack([red, green, blue], axis=3)
                 results.append(image)
 
+            # TODO: fix channel mismatch
             result = tf.add_n(results)
-            tf.summary.image('color', result, max_outputs=3)
+            # import pdb;pdb.set_trace()
+            # tf.summary.image('color', result, max_outputs=3)
             return result
 
     def _summary_labels(self, labels):
 
-        tf.summary.image("labels", tf.to_float(tf.expand_dims(labels, axis=3)))
+        # tf.summary.image("labels", tf.to_float(tf.expand_dims(labels, axis=3)))
 
         labels = self._color_labels(labels, name="labels_color")
 
     def summary(self, output, labels=None):
         output_transposed = output if self.data_format == 'NHWC' else tf.transpose(output, perm=[0, 2, 3, 1])
         images = self.images if self.data_format == 'NHWC' else tf.transpose(self.images, perm=[0, 2, 3, 1])
-        tf.summary.image("input", images)
+        # import pdb;pdb.set_trace()
+        disp_rg = images[:,:,:,:2]
+        disp_b = tf.expand_dims(images[:,:,:,3],axis=3)
+        disp = tf.concat([disp_rg,disp_b],3)
+        # disp = disp / 255
+        # tf.summary.image("input", images)
+        tf.summary.image("input", disp)
+        tf.summary.image("output", output)
+        tf.summary.image("gt", tf.cast(labels, tf.uint8))
+        tf.summary.image("diff", output - tf.cast(labels, tf.float32))
         output_argmax = tf.argmax(output_transposed, axis=3)
         output_images = self._color_labels(output_argmax, name="output_color")
 
         reversed_image = (images + tf.abs(tf.reduce_min(images)))
         reversed_image = reversed_image * (255.0 / tf.reduce_max(reversed_image))
 
-        overlap_output_input = 0.5 * reversed_image + tf.cast(output_images, tf.float32)
+        # overlap_output_input = 0.5 * reversed_image + tf.cast(output_images, tf.float32)
+        output_image = tf.cast(output_images, tf.float32)
 
-        tf.summary.image('overlap_output_input', overlap_output_input)
+        tf.summary.image('overlap_output_input', output_image)
 
-        return overlap_output_input, reversed_image
+        # return overlap_output_input, reversed_image
+        return output_image, reversed_image
 
     def metrics(self, output, labels):
         output_transposed = output if self.data_format == 'NHWC' else tf.transpose(output, perm=[0, 2, 3, 1])
@@ -105,35 +120,37 @@ class Base(BaseNetwork):
         with tf.name_scope('metrics_cals'):
             output_argmax = tf.argmax(output_transposed, axis=3)
 
-            accuracy, accuracy_update = tf.metrics.accuracy(labels, output_argmax)
+            # import pdb;pdb.set_trace()
+            # accuracy, accuracy_update = tf.metrics.accuracy(labels, output_argmax)
+            accuracy, accuracy_update = tf.metrics.accuracy(labels, output_transposed)
             results["accuracy"] = accuracy
             updates.append(accuracy_update)
 
             ious = []
             accs = []
-            for i, class_name in enumerate(self.classes):
-                pred = tf.equal(output_argmax, i)
-                truth = tf.equal(labels, i)
+            # for i, class_name in enumerate(self.classes):
+            #     pred = tf.equal(output_argmax, i)
+            #     truth = tf.equal(labels, i)
 
-                class_name = class_name.replace(' ', '_')
+            #     class_name = class_name.replace(' ', '_')
 
-                true_positive, true_positive_update = tf.metrics.true_positives(truth, pred, name=class_name)
-                false_positive, false_positive_update = tf.metrics.false_positives(truth, pred, name=class_name)
-                false_negative, false_negative_update = tf.metrics.false_negatives(truth, pred, name=class_name)
-                epsilon = 1e-10
+            #     true_positive, true_positive_update = tf.metrics.true_positives(truth, pred, name=class_name)
+            #     false_positive, false_positive_update = tf.metrics.false_positives(truth, pred, name=class_name)
+            #     false_negative, false_negative_update = tf.metrics.false_negatives(truth, pred, name=class_name)
+            #     epsilon = 1e-10
 
-                iou = true_positive / (true_positive + false_positive + false_negative + epsilon)
-                acc = true_positive / (true_positive + false_positive + epsilon)
+            #     iou = true_positive / (true_positive + false_positive + false_negative + epsilon)
+            #     acc = true_positive / (true_positive + false_positive + epsilon)
 
-                ious.append(iou)
-                accs.append(acc)
-                results["iou/{}".format(class_name)] = iou
-                updates.append(true_positive_update)
-                updates.append(false_positive_update)
-                updates.append(false_negative_update)
+            #     ious.append(iou)
+            #     accs.append(acc)
+            #     results["iou/{}".format(class_name)] = iou
+            #     updates.append(true_positive_update)
+            #     updates.append(false_positive_update)
+            #     updates.append(false_negative_update)
 
-            results["mean_iou"] = tf.reduce_mean(ious)
-            results["mean_acc"] = tf.reduce_mean(accs)
+            # results["mean_iou"] = tf.reduce_mean(ious)
+            # results["mean_acc"] = tf.reduce_mean(accs)
             # merge all updates
             updates_op = tf.group(*updates)
 
@@ -181,18 +198,20 @@ class SegnetBase(Base):
             loss_weight = tf.Print(loss_weight, loss_weight, message="loss_weight:")
 
             reshape_output = tf.reshape(output, (-1, self.num_classes))
+            # import pdb;pdb.set_trace()
 
-            label_flat = tf.reshape(labels, (-1, 1))
-            labels = tf.reshape(tf.one_hot(label_flat, depth=self.num_classes), (-1, self.num_classes))
-            softmax = tf.nn.softmax(reshape_output)
+            # label_flat = tf.reshape(labels, (-1, 1))
+            # labels = tf.reshape(tf.one_hot(label_flat, depth=self.num_classes), (-1, self.num_classes))
+            # softmax = tf.nn.softmax(reshape_output)
+            G_loss = tf.reduce_mean(tf.abs(output - tf.cast(labels,tf.float32)))
+            # cross_entropy = -tf.reduce_sum(
+            #     (labels * tf.log(tf.clip_by_value(softmax, 1e-10, 1.0))) * loss_weight,
+            #     axis=[1]
+            # )
 
-            cross_entropy = -tf.reduce_sum(
-                (labels * tf.log(tf.clip_by_value(softmax, 1e-10, 1.0))) * loss_weight,
-                axis=[1]
-            )
-
-            cross_entropy_mean = tf.reduce_mean(cross_entropy, name="cross_entropy_mean")
-            loss = cross_entropy_mean
+            # cross_entropy_mean = tf.reduce_mean(cross_entropy, name="cross_entropy_mean")
+            # loss = cross_entropy_mean
+            loss = G_loss
             if self.weight_decay_rate:
                 weight_decay_loss = self._weight_decay_loss()
                 tf.summary.scalar("weight_decay", weight_decay_loss)
