@@ -228,7 +228,7 @@ def start_training(config):
                 train_dataset.update_dataset(feed_indices)
 
         images, labels = train_dataset.feed()
-        for ind in range(2):
+        for ind in range(config.BATCH_SIZE):
             images[ind] = images[ind] * 255
             labels[ind] = labels[ind] * 255
 ###

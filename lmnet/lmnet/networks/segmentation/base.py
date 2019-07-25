@@ -62,38 +62,15 @@ class Base(BaseNetwork):
         base = self.base(images, is_training)
         return tf.identity(base, name="output")
 
-    def _color_labels(self, images, name=""):
-        with tf.name_scope(name):
-            results = []
-            for i in range(0, self.num_classes):
-                red = tf.cast(tf.equal(images, i), tf.uint8) * self.label_colors[i][0]
-                green = tf.cast(tf.equal(images, i), tf.uint8) * self.label_colors[i][1]
-                blue = tf.cast(tf.equal(images, i), tf.uint8) * self.label_colors[i][2]
-                image = tf.stack([red, green, blue], axis=3)
-                results.append(image)
-
-            # TODO: fix channel mismatch
-            result = tf.add_n(results)
-            # import pdb;pdb.set_trace()
-            # tf.summary.image('color', result, max_outputs=3)
-            return result
-
-    def _summary_labels(self, labels):
-
-        # tf.summary.image("labels", tf.to_float(tf.expand_dims(labels, axis=3)))
-
-        labels = self._color_labels(labels, name="labels_color")
 
     def summary(self, output, labels=None):
         output_transposed = output if self.data_format == 'NHWC' else tf.transpose(output, perm=[0, 2, 3, 1])
         images = self.images if self.data_format == 'NHWC' else tf.transpose(self.images, perm=[0, 2, 3, 1])
 
-        # import pdb;pdb.set_trace()
         disp_rg = images[:,:,:,:2]
         disp_b = tf.expand_dims(images[:,:,:,3],axis=3)
         disp = tf.concat([disp_rg,disp_b],3)
-        # disp = disp / 255
-        # tf.summary.image("input", images)
+
         tf.summary.image("input", disp)
         tf.summary.image("output", output)
         tf.summary.image("gt", tf.cast(labels, tf.uint8))
@@ -103,14 +80,12 @@ class Base(BaseNetwork):
 
     def metrics(self, output, labels):
         output_transposed = output if self.data_format == 'NHWC' else tf.transpose(output, perm=[0, 2, 3, 1])
-        self._summary_labels(labels)
 
         results = {}
         updates = []
         with tf.name_scope('metrics_cals'):
             output_argmax = tf.argmax(output_transposed, axis=3)
 
-            # import pdb;pdb.set_trace()
             # accuracy, accuracy_update = tf.metrics.accuracy(labels, output_argmax)
             accuracy, accuracy_update = tf.metrics.accuracy(labels, output_transposed)
             results["accuracy"] = accuracy
@@ -118,30 +93,7 @@ class Base(BaseNetwork):
 
             ious = []
             accs = []
-            # for i, class_name in enumerate(self.classes):
-            #     pred = tf.equal(output_argmax, i)
-            #     truth = tf.equal(labels, i)
 
-            #     class_name = class_name.replace(' ', '_')
-
-            #     true_positive, true_positive_update = tf.metrics.true_positives(truth, pred, name=class_name)
-            #     false_positive, false_positive_update = tf.metrics.false_positives(truth, pred, name=class_name)
-            #     false_negative, false_negative_update = tf.metrics.false_negatives(truth, pred, name=class_name)
-            #     epsilon = 1e-10
-
-            #     iou = true_positive / (true_positive + false_positive + false_negative + epsilon)
-            #     acc = true_positive / (true_positive + false_positive + epsilon)
-
-            #     ious.append(iou)
-            #     accs.append(acc)
-            #     results["iou/{}".format(class_name)] = iou
-            #     updates.append(true_positive_update)
-            #     updates.append(false_positive_update)
-            #     updates.append(false_negative_update)
-
-            # results["mean_iou"] = tf.reduce_mean(ious)
-            # results["mean_acc"] = tf.reduce_mean(accs)
-            # merge all updates
             updates_op = tf.group(*updates)
 
             return results, updates_op

@@ -291,7 +291,6 @@ class LMBiSeNet(Base):
             context_2 = self._depth_to_space(name="d2s_2_1", inputs=context_2, block_size=16)
             context = tf.concat([context_1, context_2], axis=3)
 
-
         spatial = self._depth_to_space(name="d2s_sp", inputs=spatial, block_size=16)
         x = self._fusion(spatial, context)
 
@@ -299,18 +298,15 @@ class LMBiSeNet(Base):
         x = self._conv_bias("block_last", x, self.num_classes, 1)
 
 
-        rg = images[:,:,:,:2]
+        rg = images[:, :, :, :2]
         b = tf.expand_dims(images[:,:,:,3], axis=3)
-        rgb = tf.concat([rg, b],3)
+        rgb = tf.concat([rg, b], 3)
         image_size = (self.image_size[0] * 2, self.image_size[1] * 2,)
         rgb_x2 = tf.image.resize_bilinear(rgb, image_size, align_corners=True)
 
         # only for training
         self.context_1 = self._conv_bias("float_block_context_1", context_1, self.num_classes, 1) + rgb_x2
         self.context_2 = self._conv_bias("float_block_context_2", context_2, self.num_classes, 1) + rgb_x2
-
-
-
 
         x = x + rgb_x2
         return x
@@ -340,10 +336,9 @@ class LMBiSeNet(Base):
 
     def loss(self, output, labels):
         x = output
-        context_1 = self.post_process(self.context_1)
-        context_2 = self.post_process(self.context_2)
-        labels = tf.cast(labels,tf.float32)
-        # import ipdb; ipdb.set_trace()
+        context_1 = self.context_1
+        context_2 = self.context_2
+        labels = tf.cast(labels, tf.float32)
 
         print("output", output)
         print("context1", self.context_1)
@@ -355,7 +350,6 @@ class LMBiSeNet(Base):
             loss_context_1 = tf.reduce_mean(tf.abs(context_1 - labels)) * self.auxiliary_loss_weight
             loss_context_2 = tf.reduce_mean(tf.abs(context_2 - labels)) * self.auxiliary_loss_weight
 
-            
             loss = loss_main + loss_context_1 + loss_context_2
 
             weight_decay_loss = self._weight_decay_loss()  # tf.losses.get_regularization_loss()
@@ -366,21 +360,21 @@ class LMBiSeNet(Base):
             return loss
 
     def summary(self, output, labels=None):
-        x = self.post_process(output)
+        x = output
         return super().summary(x, labels)
 
     def metrics(self, output, labels):
-        x = self.post_process(output)
+        x = output
         return super().metrics(x, labels)
 
-    def post_process(self, output):
-        with tf.name_scope("post_process"):
-            # resize bilinear
-            image_size = (self.image_size[0] * 2, self.image_size[1] * 2,)
-            output = tf.image.resize_bilinear(output, image_size, align_corners=True)
+    # def post_process(self, output):
+    #     with tf.name_scope("post_process"):
+    #         # resize bilinear
+    #         image_size = (self.image_size[0] * 2, self.image_size[1] * 2,)
+    #         output = tf.image.resize_bilinear(output, image_size, align_corners=True)
 
-            # softmax
-            return output
+    #         # softmax
+    #         return output
 
 
 class LMBiSeNetQuantize(LMBiSeNet):

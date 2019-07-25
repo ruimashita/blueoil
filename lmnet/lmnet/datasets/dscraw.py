@@ -142,16 +142,19 @@ class DSCRaw(LenovoBase):
         """Return all files and gt_boxes list."""
 
         if self.subset == "train":
-            image_path = os.path.join(self.data_dir, "result_Sony/0000/train/*.npy")
-            mask_path = os.path.join(self.data_dir, "result_Sony/0000/gt/*.npy")
+            image_path = os.path.join(self.data_dir, "result_Sony/0003/train/*.npy")
+            mask_path = os.path.join(self.data_dir, "result_Sony/0003/gt/*.npy")
             image_files = sorted(glob.glob(image_path))
             label_files = sorted(glob.glob(mask_path))
 
         if self.subset == "validation":
-            image_path = os.path.join(self.data_dir, "result_Sony/0000/train/*.npy")
-            mask_path = os.path.join(self.data_dir, "result_Sony/0000/gt/*.npy")
+            image_path = os.path.join(self.data_dir, "result_Sony/0003/train/*.npy")
+            mask_path = os.path.join(self.data_dir, "result_Sony/0003/gt/*.npy")
             image_files = sorted(glob.glob(image_path))
             label_files = sorted(glob.glob(mask_path))
+
+            image_files = image_files[:100]
+            label_files = label_files[:100]
 
         image_files, label_files = shuffle(image_files, label_files)
         print("files and annotations are ready")
