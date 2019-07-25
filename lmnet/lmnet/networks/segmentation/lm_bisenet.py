@@ -78,6 +78,8 @@ class LMBiSeNet(Base):
         self.use_attention_refinement = use_attention_refinement
         self.use_tail_gap = use_tail_gap
 
+        self.num_classes = 3
+
     def _space_to_depth(self, name, inputs=None, block_size=2):
         output = tf.space_to_depth(inputs, block_size=block_size, name=name)
         return output
@@ -125,7 +127,7 @@ class LMBiSeNet(Base):
             x = self._space_to_depth(name='s2d_2', inputs=x)
             x = self._block('conv_2', x, 96, 3)
             x = self._space_to_depth(name='s2d_3', inputs=x)
-            x = self._block('conv_3', x, 160, 3)
+            x = self._block('conv_3', x, 256, 3)
 
             return x
 
@@ -250,7 +252,8 @@ class LMBiSeNet(Base):
             enable_detail_summary=self.enable_detail_summary,
         )
 
-        x = self._block("block_first", images, 32, 1)
+        x = self._block("block_first", images, 32, 3)
+
         spatial = self._spatial(x)
 
         context_32, context_16 = self._context(x)
@@ -270,7 +273,9 @@ class LMBiSeNet(Base):
                 context_32 = self._attention("attention_32", context_32)
 
             context_16 = self._depth_to_space(name="d2s_1", inputs=context_16, block_size=2)
-            context_1 = self._block("context_16_conv_1", context_16, 64, 1)
+            context_1 = self._block("context_16_conv_1", context_16, 256, 1)
+
+            context_1 = self._depth_to_space(name="d2s_1_1", inputs=context_1, block_size=16)
 
             if self.use_tail_gap:
                 context_32 = context_32 * tail
@@ -281,18 +286,33 @@ class LMBiSeNet(Base):
             context_32 = self._depth_to_space(name="d2s_2", inputs=context_32, block_size=2)
             context_32 = self._block("context_32_conv_1", context_32, 128, 1)
             context_32 = self._depth_to_space(name="d2s_3", inputs=context_32, block_size=2)
-            context_2 = self._block("context_32_conv_2", context_32, 64, 1)
+            context_2 = self._block("context_32_conv_2", context_32, 256, 1)
 
+            context_2 = self._depth_to_space(name="d2s_2_1", inputs=context_2, block_size=16)
             context = tf.concat([context_1, context_2], axis=3)
 
+
+        spatial = self._depth_to_space(name="d2s_sp", inputs=spatial, block_size=16)
         x = self._fusion(spatial, context)
 
+        # x = self._depth_to_space(name="d2s_out", inputs=x, block_size=2)
         x = self._conv_bias("block_last", x, self.num_classes, 1)
 
-        # only for training
-        self.context_1 = self._conv_bias("float_block_context_1", context_1, self.num_classes, 1)
-        self.context_2 = self._conv_bias("float_block_context_2", context_2, self.num_classes, 1)
 
+        rg = images[:,:,:,:2]
+        b = tf.expand_dims(images[:,:,:,3], axis=3)
+        rgb = tf.concat([rg, b],3)
+        image_size = (self.image_size[0] * 2, self.image_size[1] * 2,)
+        rgb_x2 = tf.image.resize_bilinear(rgb, image_size, align_corners=True)
+
+        # only for training
+        self.context_1 = self._conv_bias("float_block_context_1", context_1, self.num_classes, 1) + rgb_x2
+        self.context_2 = self._conv_bias("float_block_context_2", context_2, self.num_classes, 1) + rgb_x2
+
+
+
+
+        x = x + rgb_x2
         return x
 
     def _cross_entropy(self, x, labels):
@@ -319,21 +339,26 @@ class LMBiSeNet(Base):
         return tf.add_n(losses) * self.weight_decay_rate
 
     def loss(self, output, labels):
-        x = self.post_process(output)
+        x = output
         context_1 = self.post_process(self.context_1)
         context_2 = self.post_process(self.context_2)
+        labels = tf.cast(labels,tf.float32)
+        # import ipdb; ipdb.set_trace()
+
+        print("output", output)
+        print("context1", self.context_1)
+        print("context2", self.context_2)
 
         with tf.name_scope("loss"):
-            labels = tf.reshape(labels, (-1, 1))
-            labels = tf.reshape(tf.one_hot(labels, depth=self.num_classes), (-1, self.num_classes))
+            loss_main = tf.reduce_mean(tf.abs(x - labels))
 
-            loss_main = self._cross_entropy(x, labels)
-            loss_context_1 = self._cross_entropy(context_1, labels) * self.auxiliary_loss_weight
-            loss_context_2 = self._cross_entropy(context_2, labels) * self.auxiliary_loss_weight
+            loss_context_1 = tf.reduce_mean(tf.abs(context_1 - labels)) * self.auxiliary_loss_weight
+            loss_context_2 = tf.reduce_mean(tf.abs(context_2 - labels)) * self.auxiliary_loss_weight
 
+            
             loss = loss_main + loss_context_1 + loss_context_2
 
-            weight_decay_loss = tf.losses.get_regularization_loss()
+            weight_decay_loss = self._weight_decay_loss()  # tf.losses.get_regularization_loss()
             loss = loss + weight_decay_loss
             tf.summary.scalar("weight_decay", weight_decay_loss)
 
@@ -351,10 +376,10 @@ class LMBiSeNet(Base):
     def post_process(self, output):
         with tf.name_scope("post_process"):
             # resize bilinear
-            output = tf.image.resize_bilinear(output, self.image_size, align_corners=True)
+            image_size = (self.image_size[0] * 2, self.image_size[1] * 2,)
+            output = tf.image.resize_bilinear(output, image_size, align_corners=True)
 
             # softmax
-            output = tf.nn.softmax(output)
             return output
 
 

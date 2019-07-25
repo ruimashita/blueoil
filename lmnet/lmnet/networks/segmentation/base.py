@@ -87,6 +87,7 @@ class Base(BaseNetwork):
     def summary(self, output, labels=None):
         output_transposed = output if self.data_format == 'NHWC' else tf.transpose(output, perm=[0, 2, 3, 1])
         images = self.images if self.data_format == 'NHWC' else tf.transpose(self.images, perm=[0, 2, 3, 1])
+
         # import pdb;pdb.set_trace()
         disp_rg = images[:,:,:,:2]
         disp_b = tf.expand_dims(images[:,:,:,3],axis=3)
@@ -97,19 +98,8 @@ class Base(BaseNetwork):
         tf.summary.image("output", output)
         tf.summary.image("gt", tf.cast(labels, tf.uint8))
         tf.summary.image("diff", output - tf.cast(labels, tf.float32))
-        output_argmax = tf.argmax(output_transposed, axis=3)
-        output_images = self._color_labels(output_argmax, name="output_color")
 
-        reversed_image = (images + tf.abs(tf.reduce_min(images)))
-        reversed_image = reversed_image * (255.0 / tf.reduce_max(reversed_image))
-
-        # overlap_output_input = 0.5 * reversed_image + tf.cast(output_images, tf.float32)
-        output_image = tf.cast(output_images, tf.float32)
-
-        tf.summary.image('overlap_output_input', output_image)
-
-        # return overlap_output_input, reversed_image
-        return output_image, reversed_image
+        return
 
     def metrics(self, output, labels):
         output_transposed = output if self.data_format == 'NHWC' else tf.transpose(output, perm=[0, 2, 3, 1])
