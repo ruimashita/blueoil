@@ -297,12 +297,11 @@ class LMBiSeNet(Base):
         # x = self._depth_to_space(name="d2s_out", inputs=x, block_size=2)
         x = self._conv_bias("block_last", x, self.num_classes, 1)
 
-
         rg = images[:, :, :, :2]
-        b = tf.expand_dims(images[:,:,:,3], axis=3)
+        b = tf.expand_dims(images[:, :, :, 3], axis=3)
         rgb = tf.concat([rg, b], 3)
         image_size = (self.image_size[0] * 2, self.image_size[1] * 2,)
-        rgb_x2 = tf.image.resize_bilinear(rgb, image_size, align_corners=True)
+        rgb_x2 = tf.image.resize_bicubic(rgb, image_size, align_corners=True)
 
         # only for training
         self.context_1 = self._conv_bias("float_block_context_1", context_1, self.num_classes, 1) + rgb_x2

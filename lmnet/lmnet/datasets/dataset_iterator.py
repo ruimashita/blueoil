@@ -239,7 +239,7 @@ class DatasetIterator:
             self.reader = _TFDSReader(self.dataset)
         else:
             if self.enable_prefetch:
-                self.prefetch_result_queue = queue.Queue(maxsize=200)
+                self.prefetch_result_queue = queue.Queue(maxsize=100)
                 self.prefetcher = _MultiProcessDatasetPrefetchThread(self.dataset, self.prefetch_result_queue, seed)
                 self.prefetcher.start()
                 print("ENABLE prefetch")
