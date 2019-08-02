@@ -17,25 +17,26 @@ from easydict import EasyDict
 import tensorflow as tf
 
 from lmnet.common import Tasks
-from lmnet.networks.classification import Lmnet
-from lmnet.datasets.cifar10 import Cifar10
+from lmnet.networks.regression import LmnetV1
+from lmnet.datasets.donkey import Donkey
 from lmnet.data_processor import Sequence
 from lmnet.pre_processor import (
     Resize,
     PerImageStandardization,
 )
 from lmnet.data_augmentor import (
-    Crop,
-    FlipLeftRight,
-    Pad,
+    Brightness,
+    Color,
+    Contrast,
+    Hue,
 )
 
 IS_DEBUG = False
 
-NETWORK_CLASS = Lmnet
-DATASET_CLASS = Cifar10
+NETWORK_CLASS = LmnetV1
+DATASET_CLASS = Donkey
 
-IMAGE_SIZE = [32, 32]
+IMAGE_SIZE = [120, 160]
 BATCH_SIZE = 100
 DATA_FORMAT = "NHWC"
 TASK = Tasks.CLASSIFICATION
@@ -69,14 +70,17 @@ PRE_PROCESSOR = Sequence([
 POST_PROCESSOR = None
 
 NETWORK = EasyDict()
-NETWORK.OPTIMIZER_CLASS = tf.train.MomentumOptimizer
-NETWORK.OPTIMIZER_KWARGS = {"momentum": 0.9}
-NETWORK.LEARNING_RATE_FUNC = tf.train.piecewise_constant
-step_per_epoch = int(50000 / BATCH_SIZE)
-NETWORK.LEARNING_RATE_KWARGS = {
-    "values": [0.01, 0.1, 0.01, 0.001, 0.0001],
-    "boundaries": [step_per_epoch, step_per_epoch * 50, step_per_epoch * 100, step_per_epoch * 198],
-}
+NETWORK.OPTIMIZER_CLASS = tf.train.AdamOptimizer
+NETWORK.OPTIMIZER_KWARGS = {"learning_rate": 0.0001}
+
+# NETWORK.OPTIMIZER_CLASS = tf.train.MomentumOptimizer
+# NETWORK.OPTIMIZER_KWARGS = {"momentum": 0.9}
+# NETWORK.LEARNING_RATE_FUNC = tf.train.piecewise_constant
+# step_per_epoch = int(50000 / BATCH_SIZE)
+# NETWORK.LEARNING_RATE_KWARGS = {
+#     "values": [0.01, 0.1, 0.01, 0.001, 0.0001],
+#     "boundaries": [step_per_epoch, step_per_epoch * 50, step_per_epoch * 100, step_per_epoch * 198],
+# }
 NETWORK.IMAGE_SIZE = IMAGE_SIZE
 NETWORK.BATCH_SIZE = BATCH_SIZE
 NETWORK.DATA_FORMAT = DATA_FORMAT
@@ -88,7 +92,9 @@ DATASET.BATCH_SIZE = BATCH_SIZE
 DATASET.DATA_FORMAT = DATA_FORMAT
 DATASET.PRE_PROCESSOR = PRE_PROCESSOR
 DATASET.AUGMENTOR = Sequence([
-    Pad(2),
-    Crop(size=IMAGE_SIZE),
-    FlipLeftRight(),
+    Brightness((0.75, 1.25)),
+    Color((0.75, 1.25)),
+    Contrast((0.75, 1.25)),
+    Hue((-10, 10)),
 ])
+DATASET.ENABLE_PREFETCH = True

@@ -277,10 +277,12 @@ class FlipLeftRight(data_processor.Processor):
     def __init__(self, probability=0.5):
         self.probability = probability
 
-    def __call__(self, image, mask=None, gt_boxes=None, **kwargs):
+    def __call__(self, image, label=None, mask=None, gt_boxes=None, **kwargs):
         flg = random.random() > self.probability
         if flg:
             image = image[:, ::-1, :]
+            # flip angle
+            label = np.array([-label[0], label[1]])
             if mask is not None:
                 if np.ndim(mask) == 2:
                     mask = mask[:, ::-1]
@@ -291,7 +293,7 @@ class FlipLeftRight(data_processor.Processor):
             if gt_boxes is not None:
                 gt_boxes = _flip_left_right_boundingbox(image, gt_boxes)
 
-        return dict({'image': image, 'mask': mask, 'gt_boxes': gt_boxes}, **kwargs)
+        return dict({'image': image, 'label': label, 'mask': mask, 'gt_boxes': gt_boxes}, **kwargs)
 
 
 def _flip_top_bottom_boundingbox(img, boxes):

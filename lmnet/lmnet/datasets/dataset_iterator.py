@@ -49,11 +49,11 @@ def _apply_augmentations(dataset, image, label):
     else:
         sample['label'] = label
 
-    # if callable(augmentor) and dataset.subset == 'train':
-    #     sample = augmentor(**sample)
+    if callable(augmentor) and dataset.subset == 'train':
+        sample = augmentor(**sample)
 
-    # if callable(pre_processor):
-    #     sample = pre_processor(**sample)
+    if callable(pre_processor):
+        sample = pre_processor(**sample)
 
     image = sample['image']
 
@@ -278,13 +278,13 @@ class DatasetIterator:
             (images, labels) = self.prefetch_result_queue.get()
         else:
             images, labels = self.reader.read()
-        train_tmp = [0] * len(images)
-        gt_tmp = [0] * len(labels)
-        for ind in range(len(images)):
-            train_tmp[ind] = np.load(images[ind])[0]
-            gt_tmp[ind] = np.load(labels[ind])[0]
-        images = train_tmp
-        labels = gt_tmp
+        # train_tmp = [0] * len(images)
+        # gt_tmp = [0] * len(labels)
+        # for ind in range(len(images)):
+        #     train_tmp[ind] = np.load(images[ind])[0]
+        #     gt_tmp[ind] = np.load(labels[ind])[0]
+        # images = train_tmp
+        # labels = gt_tmp
         # import pdb;pdb.set_trace()
 
         return images, labels

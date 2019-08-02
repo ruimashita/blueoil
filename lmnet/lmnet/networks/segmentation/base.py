@@ -52,7 +52,7 @@ class Base(BaseNetwork):
             shape=shape,
             name="images_placeholder")
         labels_placeholder = tf.placeholder(
-            tf.int32,
+            tf.float32,
             shape=(self.batch_size, self.image_size[0] * 2, self.image_size[1] * 2,3),
             name="labels_placeholder")
 
@@ -71,10 +71,10 @@ class Base(BaseNetwork):
         disp_b = tf.expand_dims(images[:,:,:,3],axis=3)
         disp = tf.concat([disp_rg,disp_b],3)
 
-        tf.summary.image("input", disp)
-        tf.summary.image("output", output)
-        tf.summary.image("gt", tf.cast(labels, tf.uint8))
-        tf.summary.image("diff", output - tf.cast(labels, tf.float32))
+        tf.summary.image("input", disp * 255)
+        tf.summary.image("output", tf.cast(output * 255., tf.uint8))
+        tf.summary.image("gt", tf.cast(labels * 255., tf.uint8))
+        tf.summary.image("diff", (output - tf.cast(labels, tf.float32)) * 255)
 
         return
 

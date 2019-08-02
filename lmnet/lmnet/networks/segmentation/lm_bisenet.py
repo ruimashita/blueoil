@@ -67,7 +67,7 @@ class LMBiSeNet(Base):
 
         # I want to use sigmoid.
         self.attention_act = tf.nn.relu
-        self.batch_norm_decay = 0.1
+        self.batch_norm_decay = 0.99
         self.enable_detail_summary = False
         # Always don't use attention refinement module for 1/16 size feature map.
         self.use_attention_refinement_16 = False
@@ -303,11 +303,14 @@ class LMBiSeNet(Base):
         image_size = (self.image_size[0] * 2, self.image_size[1] * 2,)
         rgb_x2 = tf.image.resize_bicubic(rgb, image_size, align_corners=True)
 
-        # only for training
-        self.context_1 = self._conv_bias("float_block_context_1", context_1, self.num_classes, 1) + rgb_x2
-        self.context_2 = self._conv_bias("float_block_context_2", context_2, self.num_classes, 1) + rgb_x2
+        self.context_1 = self._conv_bias("float_block_context_1", context_1, self.num_classes, 1)
+        self.context_2 = self._conv_bias("float_block_context_2", context_2, self.num_classes, 1)
 
-        x = x + rgb_x2
+        # only for training
+        # self.context_1 = self._conv_bias("float_block_context_1", context_1, self.num_classes, 1) + rgb_x2
+        # self.context_2 = self._conv_bias("float_block_context_2", context_2, self.num_classes, 1) + rgb_x2
+
+        # x = x + rgb_x2
         return x
 
     def _cross_entropy(self, x, labels):
@@ -350,6 +353,7 @@ class LMBiSeNet(Base):
             loss_context_2 = tf.reduce_mean(tf.abs(context_2 - labels)) * self.auxiliary_loss_weight
 
             loss = loss_main + loss_context_1 + loss_context_2
+            loss = loss * 255.
 
             weight_decay_loss = self._weight_decay_loss()  # tf.losses.get_regularization_loss()
             loss = loss + weight_decay_loss
